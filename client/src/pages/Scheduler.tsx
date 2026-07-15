@@ -24,7 +24,7 @@ const Scheduler = () => {
 
     const scheduled = posts.filter((p) => p.status === "scheduled");
     const published = posts.filter((p) => p.status === "published");
-    const togglePlarform = (id: string) => setSelectedPlatforms((prev) => (prev.includes(id) ?
+    const togglePlatform = (id: string) => setSelectedPlatforms((prev) => (prev.includes(id) ?
     prev.filter((p) => p !== id) : [...prev, id]));
 
     const handleSchedule = async(e: React.FormEvent) => {
@@ -53,7 +53,7 @@ const Scheduler = () => {
                         {PLATFORMS.map((p) => {
                             const active = selectedPlatforms.includes(p.id);
                             return (
-                                <button key={p.id} type="button" onClick={() => togglePlarform(p.id)}
+                                <button key={p.id} type="button" onClick={() => togglePlatform(p.id)}
                                 className={`flex items-center gap-1.5 p-3 rounded-md border
                                 transition-all duration-150 ${active ? "bg-red-50 border-red-300 text-red-500 scale-103" :
                                     "border-slate-200 text-slate-500 hover:border-slate-300"
