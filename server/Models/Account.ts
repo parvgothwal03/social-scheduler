@@ -1,0 +1,18 @@
+import mongoose from "mongoose";
+import { platform } from "node:os";
+
+const accountSchema = new mongoose.Schema({
+    user: {type: mongoose.Schema.Types.ObjectId, ref: "User", required: true},
+    platform: {type: String, enum: ["twitter", "linkedin", "facebook", "instagram",
+    "facebook_page", "linkedin_page", "instagram_business"], required: true},
+    handle: {type: String},
+    zernioAccountId: {type: String},
+    accessToken: {type: String},
+    refreshToken: {type: String},
+    tokenExpiredAt: {type: Date},
+    status: {type: String, enum: ["connected", "disconnected"], default:
+    "connected"},
+    avatarUrl: {type: String},
+}, {timestamps: true})
+
+export const Account = mongoose.model("Account", accountSchema);
