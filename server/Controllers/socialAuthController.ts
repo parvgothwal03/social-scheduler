@@ -71,7 +71,7 @@ export const generateAuthUrl = async (req: AuthRequest, res: Response) : Promise
 
 //Sync connected accounts from Zernio into MongoDB
 //GET /api/auth/sync
-export const syncAcounts = async (req: AuthRequest, res: Response) : Promise<void> => {
+export const syncAccounts = async (req: AuthRequest, res: Response) : Promise<void> => {
     try {
         const profileId = await getOrCreateZernioProfile(req.user);
         const result = await zernio.accounts.listAccounts({

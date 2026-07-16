@@ -4,6 +4,8 @@ import cors from "cors";
 import connectDB from "./config/db.js";
 import authRouter from "./Routes/authRoutes.js";
 import socialAuthRouter from "./Routes/socialAuthRoutes.js";
+import accountRouter from "./Routes/accountRoutes.js";
+import postRouter from "./Routes/postRoutes.js";
 
 const app = express();
 
@@ -24,6 +26,8 @@ app.get('/', (_req: Request, res: Response) => {
 
 app.use("/api/auth", authRouter);
 app.use("/api/oauth", socialAuthRouter);
+app.use("/api/accounts", accountRouter);
+app.use("/api/posts", postRouter);
 
 //Global Error Handler
 app.use((err: any, _req: Request, res: Response, _next: NextFunction)=> {
@@ -31,8 +35,6 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction)=> {
     res.status(500).send(err?.response?.data?.message || err?.message)
 
 })
-
-
 
 app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
