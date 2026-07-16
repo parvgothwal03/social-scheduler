@@ -31,7 +31,7 @@ const Layout = () => {
                 <header className='h-16 bg-white border-b border-slate-200 flex items-center
                 px-4 md:px-8 gap-4'>
 
-                    <button className='md:hidden p-2 ml-2 text-slate-500' onClick={() => setIsMobileMenuOpen(true)}>
+                    <button className='md:hidden p-2 -ml-2 text-slate-500' onClick={() => setIsMobileMenuOpen(true)}>
                         <MenuIcon className='size-6'/>
                     </button>
                     <div>
