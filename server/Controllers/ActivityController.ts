@@ -6,6 +6,10 @@ import { ActivityLog } from "../Models/ActivityLog.js";
 //GET /api/activity
 export const getActivity = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
+        if(!req.user) {
+            res.status(401).json({ message: "Not authorized" });
+            return;
+        }
         const activity = await ActivityLog.find({user: req.user._id}).sort({createdAt: -1}).limit(10).populate
         ("relatedPost", "content");
         res.json(activity);

@@ -3,6 +3,33 @@ import { Post } from "../Models/Post.js";
 import { Account } from "../Models/Account.js";
 import zernio from "../config/zernio.js";
 import { ActivityLog } from "../Models/ActivityLog.js";
+import axios from "axios";
+
+const uploadMediaToZernio = async (mediaUrl: string, mediaType?: "image" | "video") : Promise<string> => {
+    const parsedUrl = new URL(mediaUrl);
+    const fileName = parsedUrl.pathname.split("/").pop() || `post-media.${mediaType === "video" ? "mp4" : "jpg"}`;
+    const contentType = mediaType === "video" ? "video/mp4" : "image/jpeg";
+
+    const { data: presign } = await zernio.media.getMediaPresignedUrl({
+        body: {
+            filename: fileName,
+            contentType,
+        },
+    });
+
+    const mediaResponse = await axios.get(mediaUrl, { responseType: "arraybuffer" });
+
+    await axios.put(presign.uploadUrl, mediaResponse.data, {
+        headers: {
+            "Content-Type": mediaResponse.headers["content-type"] || contentType,
+        },
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity,
+    });
+
+    return presign.publicUrl;
+}
+
 
 
 export const initScheduler = () => {
@@ -14,9 +41,14 @@ export const initScheduler = () => {
 
             for (const post of postsToPublish) {
                 try {
+                    const postPlatforms = (post.platforms || []) as string[];
+                    const platformMatch = postPlatforms.includes("instagram")
+                        ? (["instagram", "instagram_business"] as const)
+                        : postPlatforms;
+
                     const accounts = await Account.find({
                         user: post.user,
-                        platform: {$in: post.platforms},
+                        platform: {$in: platformMatch as any},
                         status: "connected",
                         zernioAccountId: {$exists: true},
                     })
@@ -26,15 +58,20 @@ export const initScheduler = () => {
                         continue;
                     }
                     const zernioPlatforms = accounts.map((acc) => ({
-                        tform: acc.platform as any,
+                        platform: acc.platform as any,
                         accountId: acc.zernioAccountId!
                     }))
 
+                    let publishMediaUrls: string[] | undefined;
+                    if(post.mediaUrl) {
+                        const zernioMediaUrl = await uploadMediaToZernio(post.mediaUrl, post.mediaType || undefined);
+                        publishMediaUrls = [zernioMediaUrl];
+                    }
+
                     const payload = {
                         content: post.content,
-                        publishedNow: true,
-                        ...(post.mediaUrl ? {mediaItems: [{type: post.mediaType || "images",
-                        url: post.mediaUrl}]} : {}),
+                        publishNow: true,
+                        ...(publishMediaUrls ? {mediaUrls: publishMediaUrls} : {}),
                         platforms: zernioPlatforms,
                     }
                     console.log(`Publishing post ${post._id} to Zernio with media:
@@ -51,7 +88,7 @@ export const initScheduler = () => {
                     }
 
                     console.log(`Zernio post created: ${publishedPost._id || publishedPost.id}`);
-                    post.status = "posted";
+                    post.status = "published";
                     await post.save();
 
                     await ActivityLog.create({

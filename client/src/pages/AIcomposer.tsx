@@ -1,6 +1,9 @@
+
 import { useEffect, useState } from "react";
-import {dummyGenerationData, PLATFORMS} from "../assets/assets";
+import {PLATFORMS} from "../assets/assets";
 import { ArrowRightIcon, CalendarIcon, ClockIcon, HistoryIcon, Loader2Icon, TimerIcon, Wand2Icon, XIcon } from "lucide-react";
+import api from "../api/axios";
+import toast from "react-hot-toast";
 
 const AIcomposer = () => {
 
@@ -8,37 +11,97 @@ const AIcomposer = () => {
     const [tone, setTone] = useState("Professional");
     const [generateImage, setGenerateImage] = useState(true);
     const [loading, setLoading] = useState(false);
-    const [generations, setGenerations] = useState<any[]>([]);
+    const [generations, setGenerations] = useState<Array<{ _id: string; prompt: string; content: string; mediaUrl?: string; mediaType?: string; tone?: string; createdAt?: string }>>([]);
+
 
 
     //Scheduling State
-    const [activeScheduler, setActiveScheduler] = useState<any>(null);
+    const [activeScheduler, setActiveScheduler] = useState<null | { _id: string; prompt: string; content: string; mediaUrl?: string; mediaType?: string; tone?: string; createdAt?: string }>(null);
+
     const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
     const [scheduledDate, setScheduledDate] = useState("");
     const [scheduledTime, setScheduledTime] = useState("");
     const [scheduling, setScheduling] = useState(false);
 
     const fetchGenerations = async () => {
-        setGenerations(dummyGenerationData);
+        try {
+            const { data } = await api.get("/api/posts/generations");
+            setGenerations(Array.isArray(data) ? data.filter(Boolean) : []);
+        } catch {
+
+            toast.error("Failed to fetch generations. Please try again later.");
+        }
     }
     
     useEffect(() => {
-        fetchGenerations();
+        void (async () => {
+            await fetchGenerations();
+        })();
     },[])
 
     const handleGenerate = async () => {
+        if(!prompt) {
+            toast.error("Please enter a prompt to generate content.");
+            return;
+        }
         setLoading(true);
-        setTimeout(() => {
+        try {
+            const { data } = await api.post("/api/posts/generate", {prompt, tone, generateImage});
+            if(!data || !data._id) {
+                throw new Error("AI generation returned invalid data");
+            }
+            setGenerations((prev) => [data, ...prev]);
+            setActiveScheduler(data);
+            toast.success("Content generated successfully!");
+        } catch(error: unknown) {
+            const message = error && typeof error === "object" && "response" in error
+                ? ((error as { response?: { data?: { message?: string } } }).response?.data?.message)
+                : undefined;
+            toast.error(message || "Failed to generate content. Please try again later.");
+        } finally {
             setLoading(false);
-        },2000)
+        }
     }
 
     const handleSchedule = async() => {
+        if(!activeScheduler) return;
+
+        if(selectedPlatforms.length === 0) {
+            toast.error("Please select at least one platform to schedule the post.");
+            return;
+        }
+        if(!scheduledDate || !scheduledTime){
+            toast.error("Please select a valid date and time for scheduling.");
+            return;
+        }
+
+        const scheduledFor = new Date(`${scheduledDate}T${scheduledTime}`).toISOString();
         setScheduling(true);
-        setTimeout(() => {
+        try {
+            await api.post("/api/posts", {
+                content: activeScheduler.content,
+                mediaUrl: activeScheduler.mediaUrl,
+                mediaType: activeScheduler.mediaType || (activeScheduler.mediaUrl ? "image" : undefined),
+                platforms: selectedPlatforms,
+                scheduledFor,
+                status: "scheduled"
+            });
+            toast.success("AI Post scheduled successfully!");
+            setActiveScheduler(null);
+            setSelectedPlatforms([]);
+            setScheduledDate("");
+            setScheduledTime("");
+            await fetchGenerations();
+        } catch (error: unknown) {
+            const message = error && typeof error === "object" && "response" in error
+                ? ((error as { response?: { data?: { message?: string } } }).response?.data?.message)
+                : undefined;
+            toast.error(message || "Failed to schedule post. Please try again later.");
+        } finally {
+            setLoading(false);
             setScheduling(false);
-        },2000)
-    }
+        }
+        }
 
     const tones = ["Professional", "Creative", "Funny", "Minimalist", "Excited"];
 
@@ -55,7 +118,7 @@ const AIcomposer = () => {
             <div className='absolute bottom-4 right-2.5 flex items-center gap-3 text-sm'>
 
 
-                <button onClick={() => setGenerateImage(!generateImage)} className='flex items-center gap-3 bg-red-50 py-2 px-3 rounded-lg'>
+                <button type="button" onClick={() => setGenerateImage(!generateImage)} className='flex items-center gap-3 bg-red-50 py-2 px-3 rounded-lg'>
                    <span>AI Image</span> 
                    <div className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer
                     rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${generateImage ? "bg-red-500" : "bg-slate-200"}`}>
@@ -64,7 +127,7 @@ const AIcomposer = () => {
                    </div>
                 </button>
 
-                <button onClick={handleGenerate} disabled={loading} className='bg-slate-900 hover:bg-slate-800 text-white
+                <button type="button" onClick={handleGenerate} disabled={loading} className='bg-slate-900 hover:bg-slate-800 text-white
                 flex items-center gap-2 px-4 py-2 rounded-lg'>
                     {loading ? (
                         <>
@@ -82,7 +145,7 @@ const AIcomposer = () => {
             </div>
             <div className='flex flex-wrap justify-center gap-2'>
                     {tones.map((t) => (
-                        <button key={t} onClick={() => setTone(t)} className={`px-4 py-1.5
+                        <button type="button" key={t} onClick={() => setTone(t)} className={`px-4 py-1.5
                         rounded-full text-sm transition-all border ${tone === t ? "bg-red-500 border-red-500 text-white" : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"}`}> 
                             {t}
                         </button>
@@ -101,15 +164,15 @@ const AIcomposer = () => {
                 </div>
 
                 <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'>
-                    {generations.map((gen) => (
-                        <div key={gen._id} className='group bg-white rounded-2xl border
+                    {generations.map((gen, index) => (
+                        <div key={gen?._id || `${gen?.prompt || "generation"}-${index}`} className='group bg-white rounded-2xl border
                         border-slate-100 p-5 hover:border-red-200 transition-all relative 
                         overflow-hidden'>
                             <div className='flex flex-col h-full space-y-4'>
 
 
                                 <div className='flex items-center justify-between'>
-                                    <span className="text-xs text-slate-400 uppercase tracking-widest">{new Date(gen.createdAt).toLocaleString()}</span>
+                                    <span className="text-xs text-slate-400 uppercase tracking-widest">{gen.createdAt ? new Date(gen.createdAt).toLocaleString() : "Just now"}</span>
                                     <span className='text-xs text-red-500 bg-red-50 px-2 py-0.5
                                     rounded-md'>{gen.tone}</span>
                                 </div>
@@ -126,7 +189,7 @@ const AIcomposer = () => {
                                 )}
 
                                 <div className='flex items-center gap-2 pt-2'>
-                                    <button onClick={() => setActiveScheduler(gen)}
+                                    <button type="button" onClick={() => setActiveScheduler(gen)}
                                     className='flex-1 bg-slate-100 hover:bg-red-500 hover:text-white
                                     text-slate-600 text-xs py-2.5 rounded-lg transition-all'>
                                         Schedule Post
@@ -160,7 +223,7 @@ const AIcomposer = () => {
                         <div className='flex items-center justify-between px-8 py-4 border-b
                         border-slate-100 bg-slate-50/30'>
                             <h3 className='text-slate-900'>Schedule Generation</h3>
-                            <button onClick={() => setActiveScheduler(null)} className='p-2 rounded-full hover:bg-slate-100 text-slate-400
+                            <button type="button" onClick={() => setActiveScheduler(null)} className='p-2 rounded-full hover:bg-slate-100 text-slate-400
                             transition-colors'>
                                 <XIcon className='size-5'/>
                             </button>
@@ -193,7 +256,7 @@ const AIcomposer = () => {
                             {PLATFORMS.map((p) => {
                                 const active = selectedPlatforms.includes(p.id);
                                 return (
-                                    <button key={p.id} onClick={() => setSelectedPlatforms((prev) => (prev.includes(p.id) ?
+                                    <button type="button" key={p.id} onClick={() => setSelectedPlatforms((prev) => (prev.includes(p.id) ?
                                     prev.filter((x) => x !== p.id) : [...prev, p.id]))}
                                     className={`p-2.5 rounded-md border text-xs ${active ? "bg-red-500/80 text-white" : "bg-white border-slate-200 text-slate-400"}`}>
                                         <p.icon className='size-4.5'/>
@@ -220,7 +283,7 @@ const AIcomposer = () => {
                             </div>
                         </div>
                         </div>
-                        <button onClick={handleSchedule} className='w-full flex items-center justify-center gap-2 py-3 rounded-md
+                        <button type="button" onClick={handleSchedule} disabled={scheduling} className='w-full flex items-center justify-center gap-2 py-3 rounded-md
                         bg-slate-200 text-slate-700 hover:bg-red-500 hover:text-white transition'>
                             {scheduling ? <Loader2Icon className='size-4 animate-spin'/> : 
                             <TimerIcon className='size-4'/>}

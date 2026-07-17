@@ -2,10 +2,11 @@ import { AuthRequest } from "../Middleware/authMiddleware.js";
 import { Response } from "express";
 import { GoogleGenAI } from "@google/genai";
 import axios from "axios";
-import { cloudinary } from "../config/cloudinary.js";
+import cloudinary  from "../config/cloudinary.js";
 import { Generation } from "../Models/Generation.js";
 import { Post } from "../Models/Post.js";
 import { error } from "console";
+import multer from "multer";
 
 
 //Helper to poll Leonardo AI
@@ -15,8 +16,7 @@ const pollLeonardoJob = async (generationId: string, apiKey: string) : Promise<s
 
     for(let i = 0; i<maxRetries; i++){
         try {
-            const response = await axios.get(`https://cloud.leonardo.ai/api/rest/v1/
-            generations/${generationId}`, {headers: {
+            const response = await axios.get(`https://cloud.leonardo.ai/api/rest/v1/generations/${generationId}`, {headers: {
                 accept: "application/json", authorization: `Bearer ${apiKey}`
             }})
 
@@ -32,6 +32,7 @@ const pollLeonardoJob = async (generationId: string, apiKey: string) : Promise<s
                 }
         } catch (err: any) {
             console.error("Error polling Leonardo AI:", err?.response?.message || err.message);
+            throw error;
         }
 
         await new Promise((resolve) => setTimeout(resolve, delay));
@@ -43,6 +44,10 @@ const pollLeonardoJob = async (generationId: string, apiKey: string) : Promise<s
 //POST /api/posts/generate
 export const generatePost = async (req: AuthRequest, res: Response)  : Promise<void> => {
     try {
+        if(!req.user) {
+            res.status(401).json({message: "Not authorized"});
+            return;
+        }
         const {prompt, tone, generateImage} = req.body;
 
         const apiKey = process.env.GEMINI_API_KEY;
@@ -55,7 +60,7 @@ export const generatePost = async (req: AuthRequest, res: Response)  : Promise<v
 
         //Generate text content
         const textResponse = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.5-flash",
         contents: `Generate a social media post with the following prompt: 
         "${prompt}". Tone: ${tone}.
         Include relevant hashtags.
@@ -106,8 +111,8 @@ export const generatePost = async (req: AuthRequest, res: Response)  : Promise<v
                 }
             )
 
-            const generationId = leoResponse.data.generate.generationId;
-            const tempUrl = await pollLeonardoJob(generationId, leonardoKey);
+            const generationId = leoResponse?.data?.generate?.generationId;
+            const tempUrl = await pollLeonardoJob(generationId, process.env.LEONARDO_API_KEY || "");
 
             //Upload to Cloudinary for Persistence
             const uploadResult = await cloudinary.uploader.upload(tempUrl, {
@@ -132,6 +137,7 @@ export const generatePost = async (req: AuthRequest, res: Response)  : Promise<v
 
         res.json(generation);
     } catch (error: any) {
+        console.error("Error generating post:", error?.response?.data || error.message);
         res.status(500).json({message: error?.message || "Server error" });
     }
 }
@@ -141,6 +147,10 @@ export const generatePost = async (req: AuthRequest, res: Response)  : Promise<v
 //GET /api/posts/generations
 export const getGenerations = async (req: AuthRequest, res: Response)  : Promise<void> => {
     try {
+        if(!req.user) {
+            res.status(401).json({message: "Not authorized"});
+            return;
+        }
         const generations = await Generation.find({user: req.user._id}).sort({createdAt: -1});
         res.json(generations);
     } catch (error: any) {
@@ -153,6 +163,10 @@ export const getGenerations = async (req: AuthRequest, res: Response)  : Promise
 //GET /api/posts
 export const getPost = async (req: AuthRequest, res: Response)  : Promise<void> => {
     try {
+        if(!req.user) {
+            res.status(401).json({message: "Not authorized"});
+            return;
+        }
         const posts = await Post.find({user: req.user._id})
         res.json(posts);
     } catch (error: any) {
@@ -165,6 +179,10 @@ export const getPost = async (req: AuthRequest, res: Response)  : Promise<void> 
 //POST /api/posts
 export const schedulePost = async (req: AuthRequest, res: Response)  : Promise<void> => {
     try {
+        if(!req.user) {
+            res.status(401).json({message: "Not authorized"});
+            return;
+        }
         const {content, platforms, scheduledFor, status} = req.body;
         //Parse platforms if it comes as a stringified array from FormData
         let parsedPlatforms = platforms;
@@ -182,7 +200,7 @@ export const schedulePost = async (req: AuthRequest, res: Response)  : Promise<v
         if(req.file) {
             const result = await new Promise<any>((resolve, reject)=> {
                 const stream = cloudinary.uploader.upload_stream({resource_type: "auto",
-                    folder: "scheduled-posts"}, () => {
+                    folder: "scheduled-posts"}, (error, result) => {
                         if(error) reject(error);
                         else resolve(result);
                 });

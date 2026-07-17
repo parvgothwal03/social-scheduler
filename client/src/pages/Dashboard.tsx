@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ActivityIcon, CheckCircleIcon, ClockIcon, SendIcon, Share2Icon, TrendingUpIcon } from 'lucide-react';
 import { useEffect, useState, } from 'react';
-import { dummyAccountsData, dummyActivityData, dummyPostsData } from '../assets/assets'
+import api from '../api/axios';
 const Dashboard = () => {
 
     const [stats, setStats] = useState({scheduled: 0, published: 0, connectedAccounts: 0})
@@ -9,20 +10,30 @@ const Dashboard = () => {
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const [postsRes, accountsRes, activityRes] = [{data: dummyPostsData}, {data:
-                    dummyAccountsData}, {data: dummyActivityData}]
-                    const posts = postsRes.data;
-                    setStats({
-                        scheduled: posts.filter((p: any) => p.status === 'scheduled').length,
-                        published: posts.filter((p: any) => p.status === 'published').length,
-                        connectedAccounts: accountsRes.data.filter((a: any) => a.status === 'connected').length
-                    })
-                    setActivities(activityRes.data)
+                const [postsRes, accountsRes, activityRes] = await Promise.all([
+                    api.get('/api/posts'),
+                    api.get('/api/accounts'),
+                    api.get('/api/activity')
+                ])
+
+                const posts = postsRes.data;
+                setStats({
+                    scheduled: posts.filter((p: any) => p.status === 'scheduled').length,
+                    published: posts.filter((p: any) => p.status === 'published' || p.status === 'posted').length,
+                    connectedAccounts: accountsRes.data.filter((a: any) => a.status === 'connected').length
+                })
+                setActivities(activityRes.data)
             } catch (error: any) {
                 console.error("Error fetching dashboard data:", error);
             }
         };
-        fetchDashboardData();
+
+        void fetchDashboardData();
+        const interval = setInterval(() => {
+            void fetchDashboardData();
+        }, 10000);
+
+        return () => clearInterval(interval);
     },[])
 
     const statCards = [

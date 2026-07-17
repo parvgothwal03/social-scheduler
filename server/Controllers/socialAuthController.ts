@@ -9,12 +9,23 @@ import { AuthRequest } from "../Middleware/authMiddleware.js";
 //Helper to ensure user has a Zernio Profile.
 const getOrCreateZernioProfile = async (user:any) : Promise<string> => {
     try {
+        if(user.zernioProfileId) {
+            return user.zernioProfileId;
+        }
+
         const result = await zernio.profiles.listProfiles()
         const data = result.data as any;
         const profiles: any[] = Array.isArray(data) ? data : data?.profiles || data?.data || [];
 
-        if(profiles.length > 0) {
-            const pid = profiles[0]._id || profiles[0].id
+        const existingProfile = profiles.find((profile) => {
+            const pid = profile._id || profile.id;
+            const profileName = (profile.name || profile.title || "").toLowerCase();
+            const userName = (user.name || user.email || "").toLowerCase();
+            return pid && profileName.includes(userName);
+        });
+
+        if(existingProfile) {
+            const pid = existingProfile._id || existingProfile.id
             await User.findByIdAndUpdate(user._id, {zernioProfileId: pid})
             return pid;
         }
@@ -42,11 +53,15 @@ const getOrCreateZernioProfile = async (user:any) : Promise<string> => {
 //GET /api/auth/:platform
 export const generateAuthUrl = async (req: AuthRequest, res: Response) : Promise<void> => {
     try {
+        if(!req.user) {
+            res.status(401).json({message: "Not authorized"});
+            return;
+        }
         const {platform} = req.params;
         const profileId = await getOrCreateZernioProfile(req.user);
 
         const origin = req.headers.origin;
-        const redirectUrl = `{origin}/accounts`;
+        const redirectUrl = `${origin}/accounts`;
         const result = await zernio.connect.getConnectUrl({
             path: {platform: platform as any},
             query: {
@@ -73,6 +88,10 @@ export const generateAuthUrl = async (req: AuthRequest, res: Response) : Promise
 //GET /api/auth/sync
 export const syncAccounts = async (req: AuthRequest, res: Response) : Promise<void> => {
     try {
+        if(!req.user) {
+            res.status(401).json({message: "Not authorized"});
+            return;
+        }
         const profileId = await getOrCreateZernioProfile(req.user);
         const result = await zernio.accounts.listAccounts({
             query: {profileId} as any
@@ -80,7 +99,7 @@ export const syncAccounts = async (req: AuthRequest, res: Response) : Promise<vo
 
         const data = result.data as any;
         const zernioAccounts: any[] = data?.accounts || (Array.isArray(data) ? data : []);
-        const supportedPlatforms = ["twitter", "linkedin", "facebook", "instagram",];
+        const supportedPlatforms = ["twitter", "linkedin", "facebook", "instagram_business", "instagram",];
         const syncedAccounts = [];
 
         for(const zAccount of zernioAccounts) {
