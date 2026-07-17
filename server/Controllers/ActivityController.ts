@@ -1,0 +1,20 @@
+import { AuthRequest } from "../Middleware/authMiddleware.js";
+import { Response } from "express";
+import { ActivityLog } from "../Models/ActivityLog.js";
+
+//Get All activity
+//GET /api/activity
+export const getActivity = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        if(!req.user) {
+            res.status(401).json({ message: "Not authorized" });
+            return;
+        }
+        const activity = await ActivityLog.find({user: req.user._id}).sort({createdAt: -1}).limit(10).populate
+        ("relatedPost", "content");
+        res.json(activity);
+
+    } catch (error: any) {
+        res.status(500).json({ message: error?.message || "Server Error" });
+    }
+}
