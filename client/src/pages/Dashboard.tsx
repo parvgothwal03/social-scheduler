@@ -2,10 +2,16 @@
 import { ActivityIcon, CheckCircleIcon, ClockIcon, SendIcon, Share2Icon, TrendingUpIcon } from 'lucide-react';
 import { useEffect, useState, } from 'react';
 import api from '../api/axios';
+
+interface Activity {
+    _id: string;
+    description: string;
+    createdAt: string;
+}
 const Dashboard = () => {
 
     const [stats, setStats] = useState({scheduled: 0, published: 0, connectedAccounts: 0})
-    const [activities, setActivities] = useState<[]>([])
+    const [activities, setActivities] = useState<Activity[]>([])
 
     useEffect(() => {
         const fetchDashboardData = async () => {
