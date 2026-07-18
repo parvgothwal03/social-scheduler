@@ -66,7 +66,8 @@ export const generateAuthUrl = async (req: AuthRequest, res: Response) : Promise
             path: {platform: platform as any},
             query: {
                 profileId,
-                redirect_Url: redirectUrl
+                redirect_url: redirectUrl,
+                headless: true
             }
         })
 

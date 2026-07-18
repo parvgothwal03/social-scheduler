@@ -4,6 +4,7 @@ import { Account } from "../Models/Account.js";
 import zernio from "../config/zernio.js";
 import { ActivityLog } from "../Models/ActivityLog.js";
 import axios from "axios";
+import { Buffer } from "buffer";
 
 const uploadMediaToZernio = async (mediaUrl: string, mediaType?: "image" | "video") : Promise<string> => {
     const parsedUrl = new URL(mediaUrl);
@@ -19,14 +20,13 @@ const uploadMediaToZernio = async (mediaUrl: string, mediaType?: "image" | "vide
 
     const mediaResponse = await axios.get(mediaUrl, { responseType: "arraybuffer" });
 
-    await axios.put(presign.uploadUrl, mediaResponse.data, {
+    await axios.put(presign.uploadUrl, Buffer.from(mediaResponse.data) , {
         headers: {
             "Content-Type": mediaResponse.headers["content-type"] || contentType,
         },
         maxBodyLength: Infinity,
         maxContentLength: Infinity,
-    });
-
+    })
     return presign.publicUrl;
 }
 
@@ -73,12 +73,18 @@ export const initScheduler = () => {
                         publishNow: true,
                         ...(publishMediaUrls ? {mediaUrls: publishMediaUrls} : {}),
                         platforms: zernioPlatforms,
-                    }
+
+                        media: publishMediaUrls && publishMediaUrls.length > 0 ? publishMediaUrls: [],
+                        mediaUrl: publishMediaUrls && publishMediaUrls.length > 0 ? publishMediaUrls: []
+                    };
                     console.log(`Publishing post ${post._id} to Zernio with media:
                     ${post.mediaUrl || "None"}`);
 
-                    const response = await zernio.posts.createPost({
-                        body: payload
+                    const response = await axios.post("https://zernio.com", payload, {
+                        headers: {
+                            Authorization: `Bearer ${process.env.ZERNIO_API_KEY}`,
+                            "Content-Type": "application/json"
+                        }
                     })
 
                     const publishedPost = (response.data as any)?.post || response.data;
@@ -87,10 +93,13 @@ export const initScheduler = () => {
                         throw new Error(`Failed to get post object from Zernio response`);
                     }
 
-                    console.log(`Zernio post created: ${publishedPost._id || publishedPost.id}`);
-                    post.status = "published";
-                    await post.save();
-
+                    console.log(`Zernio post created: ${publishedPost._id || publishedPost.id} || 'Success'`);
+                    await post.updateOne({
+                        $set: {
+                            status: "published",
+                            publishedAt: new Date()
+                        }
+                    });
                     await ActivityLog.create({
                         user: post.user,
                         actionType: "POST_PUBLISHED",
