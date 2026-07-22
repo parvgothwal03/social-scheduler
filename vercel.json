@@ -3,7 +3,7 @@
     "rewrites": [
     {
         "source": "/api/(.*)",
-        "destination": "/server/dist/Routes/accountRoutes.ts"
+        "destination": "/server/dist/Routes/accountRoutes.js"
     }
     ]
 }
