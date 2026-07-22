@@ -68,19 +68,26 @@ export const initScheduler = () => {
                         publishMediaUrls = [zernioMediaUrl];
                     }
 
+                    const formattedMedia = publishMediaUrls && publishMediaUrls.length > 0
+                        ? publishMediaUrls.map((urlStr) => {
+                            const isVideo = urlStr.toLowerCase().match(/\.(mp4|mov|avi|mkv)$/);
+                            return {
+                                url: urlStr,
+                                type: isVideo ? "video" : "image"
+                            };
+                        }) : [];
+
                     const payload = {
                         content: post.content,
                         publishNow: true,
-                        ...(publishMediaUrls ? {mediaUrls: publishMediaUrls} : {}),
                         platforms: zernioPlatforms,
-
-                        media: publishMediaUrls && publishMediaUrls.length > 0 ? publishMediaUrls: [],
-                        mediaUrl: publishMediaUrls && publishMediaUrls.length > 0 ? publishMediaUrls: []
+                        mediaItems: formattedMedia,
+                    
                     };
                     console.log(`Publishing post ${post._id} to Zernio with media:
                     ${post.mediaUrl || "None"}`);
 
-                    const response = await axios.post("https://zernio.com", payload, {
+                    const response = await axios.post("https://zernio.com/api/v1/posts", payload, {
                         headers: {
                             Authorization: `Bearer ${process.env.ZERNIO_API_KEY}`,
                             "Content-Type": "application/json"
