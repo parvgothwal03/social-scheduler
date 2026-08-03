@@ -43,7 +43,7 @@ const Layout = () => {
 
             <Sidebar isOpen={isMobileMenuOpen} setIsOpen={setIsMobileMenuOpen} />
 
-            <div className='flex-1 flex flex-col overflow-hidden'>
+            <div className='flex-1 w-full flex flex-col overflow-hidden'>
                 {/* Top Bar */}
                 <header className='h-16 bg-white border-b border-slate-200 flex items-center
                 px-4 md:px-8 gap-4'>
