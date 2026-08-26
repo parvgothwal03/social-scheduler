@@ -34,7 +34,7 @@ const Analytics = () => {
     <div className='max-w-6xl mx-auto space-y-10 pb-20 animate-in fade-in duration-700'>
       {/* Header */}
       <div className='space-y-2 mt-10'>
-        <h1 className='text-3xl text-slate-700 tracking-tight'>Post Analytics & Engagement</h1>
+        <h1 className='text-2xl text-slate-700 tracking-tight'>Post Analytics & Engagement</h1>
         <p className="text-slate-500 text-sm">
           Monitor your reach, engagement, and top-performing content across all connected platforms.
         </p>
