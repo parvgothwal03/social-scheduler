@@ -3,58 +3,71 @@ import AutoReplySettings from '../Models/AutoReplyModel.js';
 import axios from 'axios';
 
 export const handleZernioWebhook = async (req: Request, res: Response) => {
-  // 1. Immediately acknowledge webhook to prevent timeouts
+  // Acknowledge webhook immediately so Zernio marks it as 200 Success
   res.status(200).send('Webhook received');
 
   try {
     const { event, comment, post, account } = req.body;
 
+    console.log('--- Incoming Webhook Event ---', event);
+
     if (event !== 'comment.received' || !comment) {
+      console.log('Skipping event: Not a comment.received event.');
       return;
     }
 
-    // Prevent replying to own comments
+    // Ignore self comments to prevent infinite loops
     if (comment.author?.isOwnAccount) {
-      console.log('Ignored comment from own account.');
+      console.log('Ignored: Comment is from account owner.');
       return;
     }
 
     const postId = comment.postId || post?.id;
     const commentId = comment.id;
-    const commentText = (comment.text || '').trim().toLowerCase();
+    const rawText = comment.text || '';
+    const cleanComment = rawText.trim().toLowerCase();
     const accountId = account?.accountId || account?.id;
 
-    // 2. Fetch AutoReply configuration
+    console.log(`Received comment: "${rawText}" (ID: ${commentId}) on Post: ${postId}`);
+
+    // Fetch active Auto Reply settings from MongoDB
     const settings = await AutoReplySettings.findOne({ isEnabled: true });
 
-    if (!settings || !settings.isEnabled) {
-      console.log('Auto-reply is disabled or no settings record found.');
+    if (!settings) {
+      console.log('No active AutoReplySettings found in MongoDB (isEnabled is false or no document exists).');
       return;
     }
 
+    console.log(`Settings found: mode=${settings.mode}, rulesCount=${settings.rules?.length}`);
+
     let replyMessage = '';
 
-    // Match keywords
+    // Strategy 1: Keyword Match
     if (settings.mode === 'keyword' && settings.rules?.length > 0) {
       const matchedRule = settings.rules.find((rule: { keyword: string; replyText: string }) =>
-        commentText.includes(rule.keyword.toLowerCase().trim())
+        cleanComment.includes(rule.keyword.trim().toLowerCase())
       );
 
       if (matchedRule) {
         replyMessage = matchedRule.replyText;
+        console.log(`Rule matched for keyword "${matchedRule.keyword}": "${replyMessage}"`);
+      } else {
+        console.log(`No keyword match found for: "${rawText}"`);
+        return;
       }
-    } else if (settings.mode === 'ai') {
-      replyMessage = 'Thanks for your comment! Check your DMs for details.';
+    } 
+    // Strategy 2: AI Responder
+    else if (settings.mode === 'ai') {
+      replyMessage = "Thanks for your comment! Check your DMs for details.";
     }
 
     if (!replyMessage) {
-      console.log(`No matching keyword found for comment text: "${comment.text}"`);
       return;
     }
 
-    console.log(`Attempting to reply to comment ${commentId} with message: "${replyMessage}"`);
+    // Send reply via Zernio API
+    console.log(`Dispatching reply to Zernio for comment ${commentId}...`);
 
-    // 3. Dispatch reply to Zernio API
     try {
       const response = await axios.post(
         `https://api.zernio.com/v1/posts/${postId}/comments`,
@@ -72,15 +85,12 @@ export const handleZernioWebhook = async (req: Request, res: Response) => {
         }
       );
 
-      console.log('Auto-reply dispatched successfully:', response.data);
-    } catch (apiError: any) {
-      console.error('Zernio API reply failure:', {
-        status: apiError.response?.status,
-        data: apiError.response?.data,
-        message: apiError.message
-      });
+      console.log('Auto-reply sent successfully! Zernio response:', response.data);
+    } catch (apiErr: any) {
+      console.error('Failed to post reply to Zernio:', apiErr.response?.data || apiErr.message);
     }
-  } catch (error: any) {
-    console.error('Webhook processing exception:', error.message);
+
+  } catch (err: any) {
+    console.error('Webhook execution error:', err.message);
   }
 };
