@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 
 export const handleZernioWebhook = async (req: Request, res: Response) => {
   try {
+    
     const { event, comment, account } = req.body;
 
     if (event === 'comment.received') {

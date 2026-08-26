@@ -1,4 +1,4 @@
-import { CalendarDaysIcon, LayoutDashboardIcon, LogOutIcon, UserIcon, Wand2Icon } from "lucide-react";
+import { BarChart3Icon, CalendarDaysIcon, LayoutDashboardIcon, LogOutIcon, MessageSquareReplyIcon, UserIcon, Wand2Icon } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -13,6 +13,8 @@ const Sidebar = ({isOpen, setIsOpen} : {isOpen: boolean, setIsOpen: (val: boolea
         {name: "Social Accounts", icon: UserIcon, path: "/accounts"},
         {name: "Post Scheduler", icon: CalendarDaysIcon, path: "/schedule"},
         {name: "AI Composer", icon: Wand2Icon, path: "/ai-composer"},
+        { name: "Auto Reply", icon: MessageSquareReplyIcon, path: "/auto-reply" },
+        { name: "Analytics", icon: BarChart3Icon, path: "/analytics" }
     ]
 
 
