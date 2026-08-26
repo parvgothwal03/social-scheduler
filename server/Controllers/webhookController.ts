@@ -1,19 +1,22 @@
+import { replyToComment } from "../config/zernio.js";
 import { Request, Response } from 'express';
-import { replyToComment } from '../config/zernio.js';
 
 export const handleZernioWebhook = async (req: Request, res: Response) => {
   try {
-    const { event, data } = req.body;
+    const { event, comment, account } = req.body;
 
-    // Check if the event is an incoming comment
     if (event === 'comment.received') {
-      const { postId, commentId, accountId, text } = data;
+      // Extract all necessary IDs directly from the payload objects
+      const postId = comment.postId;
+      const commentId = comment.id;
+      const accountId = account.accountId; 
 
-      // Insert your custom logic here (e.g., checking for specific keywords)
       const autoReply = "Thanks for your feedback!";
-
+      
+      // Pass the extracted variables to your reply function
       await replyToComment(postId, accountId, commentId, autoReply);
     }
+    
     res.status(200).send('Webhook processed');
   } catch (error) {
     console.error('Error processing webhook:', error);
