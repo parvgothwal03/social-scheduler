@@ -23,6 +23,7 @@ const AutoReplyRuleSchema = new Schema({
 const AutoReplySettingsSchema: Schema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true, index: true },
+    accountId: { type: String, required: true, index: true },
     isEnabled: { type: Boolean, default: false },
     mode: { type: String, enum: ['keyword', 'ai'], default: 'keyword' },
     aiPrompt: { 
