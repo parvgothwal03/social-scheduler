@@ -12,9 +12,10 @@ export const handleZernioWebhook = async (req: Request, res: Response) => {
       const accountId = account.accountId; 
 
       const autoReply = "Thanks for your feedback!";
+      console.log(`Attempting to reply to comment ${commentId}...`);
       
-      // Pass the extracted variables to your reply function
       await replyToComment(postId, accountId, commentId, autoReply);
+      console.log("Reply posted successfully!");
     }
     
     res.status(200).send('Webhook processed');
