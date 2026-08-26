@@ -8,9 +8,9 @@ import accountRouter from "./Routes/accountRoutes.js";
 import postRouter from "./Routes/postRoutes.js";
 import activityRouter from "./Routes/activityRoutes.js";
 import { initScheduler } from "./Services/schedulerService.js";
-import webhookRouter from "./Routes/webhookRoutes.js";
 import analyticsRoutes from "./Routes/analyticsRoutes.js";
 import autoReplyRoutes from "./Routes/autoReplyRoutes.js";
+import webhookRoutes from "./Routes/webhookRoutes.js";
 
 
 const app = express();
@@ -35,7 +35,7 @@ app.use("/api/oauth", socialAuthRouter);
 app.use("/api/accounts", accountRouter);
 app.use("/api/posts", postRouter);
 app.use("/api/activity", activityRouter);
-app.use("/api/webhooks", webhookRouter);
+app.use('/api/webhooks', webhookRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/auto-reply', autoReplyRoutes);
 
