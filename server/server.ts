@@ -10,6 +10,7 @@ import activityRouter from "./Routes/activityRoutes.js";
 import { initScheduler } from "./Services/schedulerService.js";
 import webhookRouter from "./Routes/webhookRoutes.js";
 import analyticsRoutes from "./Routes/analyticsRoutes.js";
+import autoReplyRoutes from "./Routes/autoReplyRoutes.js";
 
 
 const app = express();
@@ -36,6 +37,7 @@ app.use("/api/posts", postRouter);
 app.use("/api/activity", activityRouter);
 app.use("/api/webhooks", webhookRouter);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/auto-reply', autoReplyRoutes);
 
 // Initialize the scheduler
 initScheduler();
