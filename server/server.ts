@@ -10,6 +10,7 @@ import activityRouter from "./Routes/activityRoutes.js";
 import { initScheduler } from "./Services/schedulerService.js";
 import webhookRouter from "./Routes/webhookRoutes.js";
 
+
 const app = express();
 
 
@@ -21,7 +22,7 @@ await connectDB();
 app.use(cors())
 app.use(express.json());
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 
 app.get('/', (_req: Request, res: Response) => {
     res.send('Server is Live!');
@@ -32,7 +33,7 @@ app.use("/api/oauth", socialAuthRouter);
 app.use("/api/accounts", accountRouter);
 app.use("/api/posts", postRouter);
 app.use("/api/activity", activityRouter);
-app.use("/api/webhook", webhookRouter);
+app.use("/api/webhooks", webhookRouter);
 
 // Initialize the scheduler
 initScheduler();
