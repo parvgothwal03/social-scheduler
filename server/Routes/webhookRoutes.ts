@@ -1,7 +1,7 @@
 import express from 'express';
 import { handleZernioWebhook } from '../Controllers/webhookController.js';
 
-const router = express.Router();
-router.post('/zernio', handleZernioWebhook);
+const webhookRouter = express.Router();
+webhookRouter.post('/zernio', handleZernioWebhook);
 
-export default router;
+export default webhookRouter;
