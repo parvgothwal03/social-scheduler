@@ -9,6 +9,7 @@ import postRouter from "./Routes/postRoutes.js";
 import activityRouter from "./Routes/activityRoutes.js";
 import { initScheduler } from "./Services/schedulerService.js";
 import webhookRouter from "./Routes/webhookRoutes.js";
+import analyticsRoutes from "./Routes/analyticsRoutes.js";
 
 
 const app = express();
@@ -34,6 +35,7 @@ app.use("/api/accounts", accountRouter);
 app.use("/api/posts", postRouter);
 app.use("/api/activity", activityRouter);
 app.use("/api/webhooks", webhookRouter);
+app.use('/api/analytics', analyticsRoutes);
 
 // Initialize the scheduler
 initScheduler();

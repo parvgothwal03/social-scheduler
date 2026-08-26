@@ -1,11 +1,14 @@
 import {Zernio} from '@zernio/node';
-
 const zernio = new Zernio({
     apiKey: process.env.ZERNIO_API_KEY || '',
     baseURL: "https://zernio.com/api"
 }); 
 
 export default zernio;
+
+export const zernioClient = new Zernio({
+  apiKey: process.env.ZERNIO_API_KEY
+});
 
 export const replyToComment = async (postId: string, accountId: string, commentId: string, message: string) => {
   const response = await fetch(`https://zernio.com/api/v1/inbox/comments/${postId}`, {
