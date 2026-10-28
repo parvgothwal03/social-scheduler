@@ -50,7 +50,7 @@ export const InstagramMockup: React.FC<InstagramMockupProps> = ({
             </div>
           </div>
           <div>
-            <p className="font-bold text-slate-900 leading-tight">{username}</p>
+            <p className="font-bold text-slate-900 leading-tight">{authorName}</p>
             <p className="text-[10px] text-slate-400">Original audio</p>
           </div>
         </div>
