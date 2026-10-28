@@ -1,10 +1,16 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import AutoReplySettings from '../Models/AutoReplyModel.js';
 import { Account } from '../Models/Account.js';
+import { AuthRequest } from '../Middleware/authMiddleware.js';
 
-export const getSettings = async (req: Request, res: Response) => {
+export const getSettings = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const userId = req.user._id;
     const requestedAccountId = typeof req.query.accountId === 'string' ? req.query.accountId : undefined;
     const account = requestedAccountId
       ? await Account.findOne({ user: userId, zernioAccountId: requestedAccountId, status: 'connected' })
@@ -18,26 +24,45 @@ export const getSettings = async (req: Request, res: Response) => {
     const accountId = account.zernioAccountId;
     let settings = await AutoReplySettings.findOne({ userId, accountId });
 
-    // If no settings exist yet for this user, return a default template
+    // Migrate a pre-account-specific settings document when possible.
     if (!settings) {
-      settings = await AutoReplySettings.create({
-        userId,
-        accountId,
-        isEnabled: false,
-        mode: 'keyword',
-        rules: []
-      });
+      settings = await AutoReplySettings.findOneAndUpdate(
+        { userId, accountId: { $exists: false } },
+        { $set: { accountId } },
+        { new: true, runValidators: true }
+      );
+    }
+
+    if (!settings) {
+      settings = await AutoReplySettings.findOneAndUpdate(
+        { userId, accountId },
+        {
+          $setOnInsert: {
+            userId,
+            accountId,
+            isEnabled: false,
+            mode: 'keyword',
+            rules: []
+          }
+        },
+        { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
+      );
     }
 
     res.status(200).json(settings);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching auto-reply settings:', error);
-    res.status(500).json({ message: 'Failed to fetch settings' });
+    res.status(500).json({ message: error?.message || 'Failed to fetch settings' });
   }
 };
-export const updateSettings = async (req: Request, res: Response) => {
+export const updateSettings = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    if (!req.user) {
+      res.status(401).json({ message: 'Not authorized' });
+      return;
+    }
+
+    const userId = req.user._id;
     const { accountId, isEnabled, mode, aiPrompt, enableDmFollowUp, rules } = req.body;
 
     const account = await Account.findOne({
@@ -59,8 +84,8 @@ export const updateSettings = async (req: Request, res: Response) => {
     );
 
     res.status(200).json(updatedSettings);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating auto-reply settings:', error);
-    res.status(500).json({ message: 'Failed to update settings' });
+    res.status(500).json({ message: error?.message || 'Failed to update settings' });
   }
 };
