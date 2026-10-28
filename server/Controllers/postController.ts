@@ -64,7 +64,7 @@ export const generatePost = async (req: AuthRequest, res: Response): Promise<voi
 
     // Generate text content
     const textResponse = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.8-flash",
       contents: `Generate a social media post with the following prompt: 
         "${prompt}". Tone: ${tone}.
         Include relevant hashtags.
@@ -95,7 +95,7 @@ export const generatePost = async (req: AuthRequest, res: Response): Promise<voi
             "https://cloud.leonardo.ai/api/rest/v2/generations",
             {
               public: false,
-              model: "gpt-image-1.5",
+              model: "flux-schnell",
               parameters: {
                 quality: "LOW",
                 prompt: imagePrompt,
