@@ -2,10 +2,16 @@ import { AlertCircleIcon, CheckCircleIcon, PlusIcon, UnplugIcon } from "lucide-r
 import { PLATFORMS } from "../assets/assets";
 
 interface AccountListProps {
-    accounts: any[];
+    accounts: ConnectedAccount[];
     onDisconnect: (accountId: string) => Promise<void>
 }
 
+interface ConnectedAccount {
+    _id: string;
+    platform: string;
+    handle?: string;
+    status: 'connected' | 'disconnected';
+}
 
 const AccountList = ({ accounts, onDisconnect } : AccountListProps) => {
     const displayPlatformId = (platformId: string) => platformId === "instagram_business" ? "instagram" : platformId;

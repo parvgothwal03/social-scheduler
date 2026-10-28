@@ -94,7 +94,6 @@ const Analytics = () => {
       exportToPDF(formattedPosts, summary, `analytics_report_${Date.now()}.pdf`);
       toast.success("PDF report generated successfully!");
       setExportMenuOpen(false);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       toast.error("Failed to export PDF report.");
     }
