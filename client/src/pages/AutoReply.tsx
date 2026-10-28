@@ -2,28 +2,60 @@ import { useEffect, useState } from 'react';
 import { Loader2Icon, MessageSquareReplyIcon, PlusIcon, SaveIcon, Settings2Icon, TrashIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAutoReplySettings, updateAutoReplySettings, type AutoReplyRule } from '../api/autoReply.js';
+import api from '../api/axios.js';
+
+interface ConnectedAccount {
+  _id: string;
+  handle?: string;
+  platform: string;
+  zernioAccountId?: string;
+  status: string;
+}
+
+const DEFAULT_AI_PROMPT =
+  'Respond warmly and helpfully. Keep responses under 25 words and include a link if asked for info.';
 
 export const AutoReply = () => {
+  const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
+  const [accountId, setAccountId] = useState('');
   const [isEnabled, setIsEnabled] = useState(false);
   const [mode, setMode] = useState<'keyword' | 'ai'>('keyword');
-  const [aiPrompt, setAiPrompt] = useState(
-    'Respond warmly and helpfully. Keep responses under 25 words and include a link if asked for info.'
-  );
+  const [aiPrompt, setAiPrompt] = useState(DEFAULT_AI_PROMPT);
   const [rules, setRules] = useState<AutoReplyRule[]>([]);
   const [newKeyword, setNewKeyword] = useState('');
   const [newReply, setNewReply] = useState('');
+  const [newDmReply, setNewDmReply] = useState('');
+  const [newReplyType, setNewReplyType] = useState<AutoReplyRule['replyType']>('comment');
+  const [enableDmFollowUp, setEnableDmFollowUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const data = await getAutoReplySettings();
+        const accountsResponse = await api.get<ConnectedAccount[]>('/api/accounts');
+        const connectedAccounts = accountsResponse.data.filter(
+          (account) => account.status === 'connected' && account.zernioAccountId
+        );
+        setAccounts(connectedAccounts);
+
+        const selectedAccountId = connectedAccounts[0]?.zernioAccountId;
+        if (!selectedAccountId) {
+          return;
+        }
+
+        setAccountId(selectedAccountId);
+        const data = await getAutoReplySettings(selectedAccountId);
         if (data) {
           setIsEnabled(data.isEnabled);
           setMode(data.mode || 'keyword');
-          setAiPrompt(data.aiPrompt || aiPrompt);
-          setRules(data.rules || []);
+          setAiPrompt(data.aiPrompt || DEFAULT_AI_PROMPT);
+          setEnableDmFollowUp(Boolean(data.enableDmFollowUp));
+          setRules((data.rules || []).map((rule) => ({
+            ...rule,
+            replyType: rule.replyType || 'comment',
+            publicReplyText: rule.publicReplyText || rule.replyText || '',
+          })));
         }
       } catch (err) {
         console.error('Failed to load auto-reply settings', err);
@@ -35,14 +67,46 @@ export const AutoReply = () => {
     fetchSettings();
   }, []);
 
+  const handleAccountChange = async (selectedAccountId: string) => {
+    setAccountId(selectedAccountId);
+    setFetching(true);
+    try {
+      const data = await getAutoReplySettings(selectedAccountId);
+      setIsEnabled(data.isEnabled);
+      setMode(data.mode || 'keyword');
+      setAiPrompt(data.aiPrompt || DEFAULT_AI_PROMPT);
+      setEnableDmFollowUp(Boolean(data.enableDmFollowUp));
+      setRules((data.rules || []).map((rule) => ({
+        ...rule,
+        replyType: rule.replyType || 'comment',
+        publicReplyText: rule.publicReplyText || rule.replyText || '',
+      })));
+    } catch (err) {
+      console.error('Failed to load account auto-reply settings', err);
+      toast.error('Failed to load settings for this account.');
+    } finally {
+      setFetching(false);
+    }
+  };
+
   const handleAddRule = () => {
-    if (!newKeyword.trim() || !newReply.trim()) {
-      toast.error('Please enter both a keyword and a reply.');
+    if (!newKeyword.trim() || (newReplyType !== 'dm' && !newReply.trim()) || (newReplyType !== 'comment' && !newDmReply.trim())) {
+      toast.error('Please enter the required reply message(s).');
       return;
     }
-    setRules([...rules, { keyword: newKeyword.trim().toLowerCase(), replyText: newReply.trim() }]);
+    setRules([
+      ...rules,
+      {
+        keyword: newKeyword.trim().toLowerCase(),
+        replyType: newReplyType,
+        publicReplyText: newReply.trim() || undefined,
+        dmReplyText: newDmReply.trim() || undefined,
+      },
+    ]);
     setNewKeyword('');
     setNewReply('');
+    setNewDmReply('');
+    setNewReplyType('comment');
   };
 
   const handleDeleteRule = (index: number) => {
@@ -53,9 +117,11 @@ export const AutoReply = () => {
     setLoading(true);
     try {
       await updateAutoReplySettings({
+        accountId,
         isEnabled,
         mode,
         aiPrompt: mode === 'ai' ? aiPrompt : undefined,
+        enableDmFollowUp,
         rules: mode === 'keyword' ? rules : [],
       });
       toast.success('Auto Reply settings saved successfully!');
@@ -86,6 +152,23 @@ export const AutoReply = () => {
               Automatically respond to incoming comments on your connected accounts.
             </p>
           </div>
+
+          <select
+            value={accountId}
+            onChange={(event) => handleAccountChange(event.target.value)}
+            disabled={accounts.length === 0}
+            className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 shadow-sm"
+          >
+            {accounts.length === 0 ? (
+              <option value="">No connected accounts</option>
+            ) : (
+              accounts.map((account) => (
+                <option key={account.zernioAccountId} value={account.zernioAccountId}>
+                  {account.handle || account.platform}
+                </option>
+              ))
+            )}
+          </select>
 
           {/* Main Status Toggle Switch */}
           <button 
@@ -163,6 +246,24 @@ export const AutoReply = () => {
                 onChange={(e) => setNewReply(e.target.value)}
                 className="w-full sm:w-2/3 px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm outline-none focus:border-slate-400 transition"
               />
+              <select
+                value={newReplyType}
+                onChange={(event) => setNewReplyType(event.target.value as AutoReplyRule['replyType'])}
+                className="px-3 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 text-sm"
+              >
+                <option value="comment">Comment only</option>
+                <option value="dm">DM only</option>
+                <option value="both">Comment + DM</option>
+              </select>
+              {newReplyType !== 'comment' && (
+                <input
+                  type="text"
+                  placeholder="Private DM message..."
+                  value={newDmReply}
+                  onChange={(event) => setNewDmReply(event.target.value)}
+                  className="w-full sm:w-2/3 px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm outline-none focus:border-slate-400 transition"
+                />
+              )}
               <button
                 type="button"
                 onClick={handleAddRule}
@@ -184,7 +285,10 @@ export const AutoReply = () => {
                     <span className="inline-block px-2.5 py-0.5 rounded-md text-xs font-medium bg-red-50 text-red-500 uppercase tracking-wider">
                       Keyword: "{rule.keyword}"
                     </span>
-                    <p className="text-sm text-slate-600 leading-relaxed">{rule.replyText}</p>
+                    <p className="text-sm text-slate-600 leading-relaxed">{rule.publicReplyText}</p>
+                    {rule.dmReplyText && (
+                      <p className="text-sm text-slate-500 leading-relaxed">DM: {rule.dmReplyText}</p>
+                    )}
                   </div>
                   <button
                     type="button"
@@ -225,6 +329,15 @@ export const AutoReply = () => {
                 className="w-full px-4 py-4 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 text-sm outline-none focus:border-slate-400 transition resize-none"
               />
             </div>
+            <label className="flex items-center gap-3 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                checked={enableDmFollowUp}
+                onChange={(event) => setEnableDmFollowUp(event.target.checked)}
+                className="size-4 accent-red-500"
+              />
+              Send a private Instagram message after replying publicly
+            </label>
           </div>
         )}
       </div>
@@ -234,7 +347,7 @@ export const AutoReply = () => {
         <button
           type="button"
           onClick={handleSave}
-          disabled={loading}
+          disabled={loading || !accountId}
           className="bg-slate-900 hover:bg-slate-800 text-white flex items-center gap-2 px-6 py-3 rounded-xl transition-all shadow-sm disabled:opacity-50 text-sm font-medium cursor-pointer"
         >
           {loading ? (

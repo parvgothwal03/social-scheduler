@@ -104,7 +104,8 @@ export const initScheduler = () => {
                     await post.updateOne({
                         $set: {
                             status: "published",
-                            publishedAt: new Date()
+                            publishedAt: new Date(),
+                            zernioPostId: publishedPost._id || publishedPost.id
                         }
                     });
                     await ActivityLog.create({

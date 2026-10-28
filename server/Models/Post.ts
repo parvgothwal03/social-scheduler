@@ -9,6 +9,7 @@ const postSchema = new mongoose.Schema({
     "facebook_page", "linkedin_page", "instagram_business"]}],
     scheduledFor: {type: Date, required: true},
     status: {type: String, enum: ["scheduled", "published", "failed", "draft"], default: "scheduled"},
+    zernioPostId: { type: String },
     // --- Analytics Metrics (Defaults to 0 for old posts) ---
     impressions: { type: Number, default: 0 },
     likes: { type: Number, default: 0 },
@@ -25,6 +26,7 @@ export interface IPost extends Document {
   status: 'draft' | 'scheduled' | 'published' | 'failed';
   scheduledFor?: Date;
   publishedAt?: Date;
+  zernioPostId?: string;
   // Analytics fields
   impressions: number;
   likes: number;
