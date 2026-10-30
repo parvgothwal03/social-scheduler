@@ -1,41 +1,71 @@
+
 import { Link } from "react-router-dom";
-import { ArrowRightIcon } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 
 export default function CTA() {
     return (
-        <section className="py-20" style={{ background: "#ffffff" }}>
-            <div className="max-w-6xl mx-auto px-5 sm:px-8">
-                <div
-                    className="relative rounded-3xl overflow-hidden p-14 sm:p-20 text-center"
-                    style={{
-                        background: "linear-gradient(145deg, #fff5f5 0%, #fef2f2 100%)",
-                        border: "1.5px solid rgba(239,68,68,0.12)",
-                    }}
-                >
-                    {/* Glow blobs */}
-                    <div className="absolute top-0 right-0 w-96 h-96 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(239,68,68,0.1) 0%, transparent 70%)" }} />
-                    <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(239,68,68,0.06) 0%, transparent 70%)" }} />
+        <section className="bg-[#F8F7F3] py-24 sm:py-32">
+            <div className="mx-auto max-w-7xl px-6 sm:px-10">
+                {/* CTA container */}
+                <div className="relative overflow-hidden border border-[#DED7CA] bg-[#F1EDE4] px-6 py-20 text-center sm:px-12 sm:py-28">
+                    <div className="relative mx-auto max-w-3xl">
+                        {/* Label */}
+                        <div className="mb-9 inline-flex items-center gap-2">
+                            <span className="size-1.5 rounded-full bg-[#B97960]" />
+                            <span className="text-[10px] uppercase tracking-[0.2em] text-[#887E6F]">
+                                Your next chapter starts here
+                            </span>
+                        </div>
 
-                    <div className="relative">
-                        <div className="mb-6 inline-flex items-center gap-1.5 bg-red-500/10 border border-red-500/15 text-red-500 text-[11px] font-medium tracking-[0.06em] uppercase px-3.5 py-1.5 rounded-full">Ready to grow?</div>
-                        <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl leading-tight font-medium text-gray-900">
-                            Automate your social
+                        {/* Heading */}
+                        <h2 className="font-serif text-[43px] leading-[1.1] tracking-[-0.04em] text-[#292720] sm:text-6xl md:text-7xl">
+                            Make time for
                             <br />
-                            <span className="text-red-400 italic">media today</span>
+                            <span className="italic text-[#B97960]">
+                                better ideas.
+                            </span>
                         </h2>
-                        <p className="mt-6 text-gray-500 max-w-lg mx-auto  text-lg">Join thousands of creators and marketers who trust Scheduler to grow their audience on autopilot.</p>
 
-                        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-                            <Link to="/login" className="bg-red-500 text-white rounded-full font-semibold hover:bg-red-600 hover:shadow-[0_8px_24px_rgba(239,68,68,0.35)] inline-flex items-center gap-2 text-[15px] px-10 py-4 w-full sm:w-auto justify-center">
-                                Get Started Free <ArrowRightIcon className="size-4" />
+                        {/* Description */}
+                        <p className="mx-auto mt-7 max-w-xl text-base font-light leading-8 text-[#817B70] sm:text-lg">
+                            Let the busywork take care of itself.
+                            Create meaningful content, plan your posts
+                            and grow your social presence — all in one place.
+                        </p>
+
+                        {/* Buttons */}
+                        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                            <Link
+                                to="/login"
+                                className="group inline-flex w-full items-center justify-center gap-3 bg-[#292720] px-9 py-4 text-sm font-medium text-[#F8F7F3] transition-colors duration-300 hover:bg-[#454137] sm:w-auto"
+                            >
+                                Get started for free
+
+                                <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-1" />
                             </Link>
-                            <a href="#pricing" className="bg-transparent text-[#333] border-[1.5px] border-black/10 rounded-full font-medium hover:bg-black/5 hover:border-black/20 inline-flex items-center gap-2 text-[15px] px-10 py-4 w-full sm:w-auto justify-center">
-                                View Pricing
+
+                            <a
+                                href="#pricing"
+                                className="inline-flex w-full items-center justify-center gap-2 border border-[#D8D1C5] px-9 py-4 text-sm text-[#555044] transition-colors duration-300 hover:bg-white/60 sm:w-auto"
+                            >
+                                Explore pricing
                             </a>
                         </div>
 
-                        <p className="mt-6 text-xs text-gray-400">No credit card required · Cancel anytime</p>
+                        {/* Bottom note */}
+                        <p className="mt-7 text-[10px] uppercase tracking-[0.16em] text-[#A39C90]">
+                            Free forever plan · No credit card required
+                        </p>
                     </div>
+
+                    {/* Bottom accent line */}
+                    <div className="absolute bottom-0 left-0 h-[2px] w-full bg-gradient-to-r from-transparent via-[#B97960]/40 to-transparent" />
+                </div>
+
+                {/* Supporting notes */}
+                <div className="mt-8 flex flex-col items-center justify-between gap-3 text-[10px] uppercase tracking-[0.16em] text-[#A39C90] sm:flex-row">
+                    <span>Make something worth sharing.</span>
+                    <span>Less managing. More creating.</span>
                 </div>
             </div>
         </section>

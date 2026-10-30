@@ -1,3 +1,4 @@
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from "react";
 import FullCalendar from "@fullcalendar/react";
@@ -10,341 +11,418 @@ import toast from "react-hot-toast";
 import { Sparkles, Clock } from "lucide-react";
 
 interface PostItem {
-  _id: string;
-  content: string;
-  platforms: string[];
-  scheduledFor: string;
-  status: "scheduled" | "published" | "failed" | "processing";
-  mediaUrl?: string;
-  mediaType?: "image" | "video";
+    _id: string;
+    content: string;
+    platforms: string[];
+    scheduledFor: string;
+    status: "scheduled" | "published" | "failed" | "processing";
+    mediaUrl?: string;
+    mediaType?: "image" | "video";
 }
 
 interface CalendarViewProps {
-  posts: PostItem[];
-  onRefresh: () => Promise<void> | void;
-  onSelectDateSlot?: (date: Date) => void;
+    posts: PostItem[];
+    onRefresh: () => Promise<void> | void;
+    onSelectDateSlot?: (date: Date) => void;
 }
 
 const platformThemes: Record<
-  string,
-  { label: string; badge: string; border: string; glow: string }
+    string,
+    { label: string; badge: string; border: string; glow: string }
 > = {
-  instagram: {
-    label: "IG",
-    badge: "bg-linear-to-tr from-amber-500 via-rose-500 to-purple-600 text-white",
-    border: "border-rose-200 hover:border-rose-400",
-    glow: "group-hover:shadow-rose-100",
-  },
-  linkedin: {
-    label: "IN",
-    badge: "bg-blue-600 text-white",
-    border: "border-blue-200 hover:border-blue-400",
-    glow: "group-hover:shadow-blue-100",
-  },
-  twitter: {
-    label: "X",
-    badge: "bg-zinc-900 text-white",
-    border: "border-zinc-300 hover:border-zinc-500",
-    glow: "group-hover:shadow-zinc-100",
-  },
-  facebook: {
-    label: "FB",
-    badge: "bg-indigo-600 text-white",
-    border: "border-indigo-200 hover:border-indigo-400",
-    glow: "group-hover:shadow-indigo-100",
-  },
-  default: {
-    label: "POST",
-    badge: "bg-slate-700 text-white",
-    border: "border-slate-200 hover:border-slate-400",
-    glow: "group-hover:shadow-slate-100",
-  },
+    instagram: {
+        label: "IG",
+        badge: "bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white",
+        border: "border-rose-200 hover:border-rose-400",
+        glow: "group-hover:shadow-rose-100",
+    },
+    linkedin: {
+        label: "IN",
+        badge: "bg-blue-600 text-white",
+        border: "border-blue-200 hover:border-blue-400",
+        glow: "group-hover:shadow-blue-100",
+    },
+    twitter: {
+        label: "X",
+        badge: "bg-[#292720] text-white",
+        border: "border-[#DED7CA] hover:border-[#817B70]",
+        glow: "group-hover:shadow-stone-100",
+    },
+    facebook: {
+        label: "FB",
+        badge: "bg-indigo-600 text-white",
+        border: "border-indigo-200 hover:border-indigo-400",
+        glow: "group-hover:shadow-indigo-100",
+    },
+    default: {
+        label: "POST",
+        badge: "bg-[#817B70] text-white",
+        border: "border-[#DED7CA] hover:border-[#B97960]",
+        glow: "group-hover:shadow-stone-100",
+    },
 };
 
 export const CalendarView: React.FC<CalendarViewProps> = ({
-  posts,
-  onRefresh,
-  onSelectDateSlot,
+    posts,
+    onRefresh,
+    onSelectDateSlot,
 }) => {
-  const [rescheduling, setRescheduling] = useState(false);
+    const [rescheduling, setRescheduling] = useState(false);
 
-  const events = posts.map((post) => {
-    const isDraggable = post.status === "scheduled" || post.status === "failed";
-    const primaryPlatform = post.platforms?.[0]?.toLowerCase() || "default";
+    const events = posts.map((post) => {
+        const isDraggable =
+            post.status === "scheduled" || post.status === "failed";
 
-    return {
-      id: post._id,
-      title: post.content,
-      start: post.scheduledFor,
-      allDay: false,
-      editable: isDraggable,
-      startEditable: isDraggable,
-      durationEditable: false,
-      backgroundColor: "transparent",
-      borderColor: "transparent",
-      extendedProps: {
-        platforms: post.platforms || [],
-        primaryPlatform,
-        status: post.status,
-        mediaUrl: post.mediaUrl,
-        mediaType: post.mediaType,
-        timeString: new Date(post.scheduledFor).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      },
+        const primaryPlatform =
+            post.platforms?.[0]?.toLowerCase() || "default";
+
+        return {
+            id: post._id,
+            title: post.content,
+            start: post.scheduledFor,
+            allDay: false,
+            editable: isDraggable,
+            startEditable: isDraggable,
+            durationEditable: false,
+            backgroundColor: "transparent",
+            borderColor: "transparent",
+            extendedProps: {
+                platforms: post.platforms || [],
+                primaryPlatform,
+                status: post.status,
+                mediaUrl: post.mediaUrl,
+                mediaType: post.mediaType,
+                timeString: new Date(post.scheduledFor).toLocaleTimeString(
+                    [],
+                    {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    }
+                ),
+            },
+        };
+    });
+
+    const handleEventDrop = async (dropInfo: EventDropArg) => {
+        const newStart = dropInfo.event.start;
+
+        if (!newStart) {
+            dropInfo.revert();
+            return;
+        }
+
+        if (newStart.getTime() <= Date.now()) {
+            toast.error("Cannot reschedule a post to a past date or time");
+            dropInfo.revert();
+            return;
+        }
+
+        setRescheduling(true);
+
+        const toastId = toast.loading("Updating publication slot...");
+
+        try {
+            await api.patch(
+                `/api/posts/${dropInfo.event.id}/reschedule`,
+                {
+                    scheduledFor: newStart.toISOString(),
+                }
+            );
+
+            toast.success("Post successfully moved!", { id: toastId });
+            await onRefresh();
+        } catch (err: any) {
+            toast.error(
+                err?.response?.data?.message ||
+                    err.message ||
+                    "Failed to reschedule post",
+                { id: toastId }
+            );
+
+            dropInfo.revert();
+        } finally {
+            setRescheduling(false);
+        }
     };
-  });
 
-  const handleEventDrop = async (dropInfo: EventDropArg) => {
-    const newStart = dropInfo.event.start;
+    const renderEventContent = (eventInfo: any) => {
+        const { primaryPlatform, status, mediaUrl, timeString } =
+            eventInfo.event.extendedProps;
 
-    if (!newStart) {
-      dropInfo.revert();
-      return;
-    }
+        const theme =
+            platformThemes[primaryPlatform] || platformThemes.default;
 
-    if (newStart.getTime() <= Date.now()) {
-      toast.error("Cannot reschedule a post to a past date or time");
-      dropInfo.revert();
-      return;
-    }
+        return (
+            <div
+                className={`group relative flex w-full cursor-grab items-center gap-2 rounded-xl border bg-white p-1.5 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md active:cursor-grabbing ${theme.border} ${theme.glow}`}
+            >
+                {mediaUrl ? (
+                    <div className="relative size-7 shrink-0 overflow-hidden rounded-lg border border-[#DED7CA]">
+                        <img
+                            src={mediaUrl}
+                            alt="Post media"
+                            className="h-full w-full object-cover"
+                        />
 
-    setRescheduling(true);
-    const toastId = toast.loading("Updating publication slot...");
+                        <div
+                            className={`absolute bottom-0 right-0 flex size-2.5 items-center justify-center rounded-tl-sm text-[7px] font-black ${theme.badge}`}
+                        >
+                            {theme.label[0]}
+                        </div>
+                    </div>
+                ) : (
+                    <div
+                        className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-[9px] font-bold tracking-tight shadow-sm ${theme.badge}`}
+                    >
+                        {theme.label}
+                    </div>
+                )}
 
-    try {
-      await api.patch(`/api/posts/${dropInfo.event.id}/reschedule`, {
-        scheduledFor: newStart.toISOString(),
-      });
-      toast.success("Post successfully moved!", { id: toastId });
-      await onRefresh();
-    } catch (err: any) {
-      toast.error(
-        err?.response?.data?.message || err.message || "Failed to reschedule post",
-        { id: toastId }
-      );
-      dropInfo.revert();
-    } finally {
-      setRescheduling(false);
-    }
-  };
+                <div className="min-w-0 flex-1 pr-1">
+                    <p className="truncate text-[11px] font-semibold leading-tight text-[#292720]">
+                        {eventInfo.event.title}
+                    </p>
 
-  const renderEventContent = (eventInfo: any) => {
-    const { primaryPlatform, status, mediaUrl, timeString } =
-      eventInfo.event.extendedProps;
-    const theme = platformThemes[primaryPlatform] || platformThemes.default;
+                    <div className="mt-1 flex items-center gap-1.5 text-[10px] text-[#817B70]">
+                        <Clock className="size-2.5 text-[#B97960]" />
+                        <span>{timeString}</span>
+                    </div>
+                </div>
+
+                <span
+                    className={`size-2 shrink-0 rounded-full ${
+                        status === "published"
+                            ? "bg-emerald-500 ring-2 ring-emerald-100"
+                            : status === "failed"
+                            ? "bg-rose-500 ring-2 ring-rose-100"
+                            : "bg-amber-400 ring-2 ring-amber-100"
+                    }`}
+                    title={`Status: ${status}`}
+                />
+            </div>
+        );
+    };
 
     return (
-      <div
-        className={`group relative w-full flex items-center gap-2 p-1.5 rounded-xl border bg-white shadow-xs transition-all duration-150 cursor-grab active:cursor-grabbing hover:-translate-y-0.5 hover:shadow-md ${theme.border} ${theme.glow}`}
-      >
-        {/* Media Thumbnail or Platform Pill */}
-        {mediaUrl ? (
-          <div className="relative size-6 shrink-0 rounded-lg overflow-hidden border border-slate-100 shadow-2xs">
-            <img src={mediaUrl} alt="post" className="w-full h-full object-cover" />
-            <div
-              className={`absolute bottom-0 right-0 size-2.5 rounded-tl-sm flex items-center justify-center text-[7px] font-black ${theme.badge}`}
-            >
-              {theme.label[0]}
+        <div className="relative rounded-3xl border border-[#DED7CA] bg-white p-4 shadow-sm sm:p-6">
+            {rescheduling && (
+                <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 rounded-3xl bg-white/75 backdrop-blur-sm">
+                    <div className="size-8 animate-spin rounded-full border-[3px] border-[#B97960] border-t-transparent" />
+
+                    <p className="text-xs font-medium tracking-wide text-[#292720]">
+                        Syncing schedule...
+                    </p>
+                </div>
+            )}
+
+            <style>{`
+                .fc {
+                    --fc-border-color: #EAE5DC;
+                    --fc-page-bg-color: transparent;
+                    --fc-today-bg-color: #F8F3EF;
+                    font-family: inherit;
+                }
+
+                .fc .fc-col-header {
+                    position: sticky;
+                    top: 0;
+                    z-index: 10;
+                    background: #F8F7F3;
+                    border-radius: 0.75rem 0.75rem 0 0;
+                }
+
+                .fc-theme-standard th {
+                    border: none;
+                    padding: 0.75rem 0;
+                    font-size: 0.7rem;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.09em;
+                    color: #817B70;
+                    background: #F8F7F3;
+                    border-bottom: 1px solid #DED7CA;
+                }
+
+                .fc .fc-toolbar {
+                    margin-bottom: 1.5rem;
+                    flex-wrap: wrap;
+                    gap: 0.75rem;
+                }
+
+                .fc .fc-toolbar-title {
+                    font-family: Georgia, serif;
+                    font-size: 1.35rem;
+                    font-weight: 400;
+                    color: #292720;
+                    letter-spacing: -0.025em;
+                }
+
+                .fc .fc-button {
+                    background: #FFFFFF;
+                    border: 1px solid #DED7CA;
+                    color: #625D54;
+                    font-size: 0.78rem;
+                    font-weight: 500;
+                    padding: 0.45rem 0.85rem;
+                    border-radius: 0.65rem;
+                    box-shadow: none;
+                    transition: all 0.15s ease;
+                    text-transform: capitalize;
+                }
+
+                .fc .fc-button:hover {
+                    background: #F8F7F3;
+                    border-color: #B97960;
+                    color: #292720;
+                }
+
+                .fc .fc-button-primary:not(:disabled).fc-button-active,
+                .fc .fc-button-primary:not(:disabled):active {
+                    background: #B97960;
+                    border-color: #B97960;
+                    color: #FFFFFF;
+                    box-shadow: none;
+                }
+
+                .fc .fc-button:focus {
+                    box-shadow: 0 0 0 2px rgba(185, 121, 96, 0.18);
+                }
+
+                .fc-theme-standard td {
+                    border-color: #EAE5DC;
+                }
+
+                .fc-daygrid-day-frame {
+                    min-height: 110px !important;
+                    padding: 4px;
+                    transition: background 0.15s;
+                }
+
+                .fc-daygrid-day:hover .fc-daygrid-day-frame {
+                    background: #FCFAF7;
+                }
+
+                .fc .fc-daygrid-day-top {
+                    flex-direction: row;
+                    padding: 4px 6px;
+                }
+
+                .fc .fc-daygrid-day-number {
+                    font-size: 0.75rem;
+                    font-weight: 500;
+                    color: #817B70;
+                    text-decoration: none;
+                }
+
+                .fc-day-today {
+                    background-color: #F8F3EF !important;
+                }
+
+                .fc-day-today .fc-daygrid-day-number {
+                    color: #B97960 !important;
+                    font-weight: 700;
+                }
+
+                .fc-daygrid-more-link {
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    color: #B97960 !important;
+                    padding: 2px 6px;
+                }
+
+                .fc-event {
+                    background: transparent !important;
+                    border: none !important;
+                    padding: 1px 0 !important;
+                }
+
+                .fc .fc-scrollgrid {
+                    border-radius: 0.75rem;
+                    overflow: hidden;
+                    border-color: #EAE5DC;
+                }
+
+                .fc .fc-timegrid-slot-label {
+                    color: #817B70;
+                    font-size: 0.7rem;
+                }
+
+                .fc .fc-timegrid-now-indicator-line {
+                    border-color: #B97960;
+                }
+
+                .fc .fc-timegrid-now-indicator-arrow {
+                    border-color: #B97960;
+                }
+
+                @media (max-width: 640px) {
+                    .fc .fc-toolbar {
+                        align-items: flex-start;
+                    }
+
+                    .fc .fc-toolbar-title {
+                        font-size: 1.1rem;
+                    }
+
+                    .fc .fc-button {
+                        padding: 0.4rem 0.6rem;
+                        font-size: 0.7rem;
+                    }
+
+                    .fc-daygrid-day-frame {
+                        min-height: 82px !important;
+                    }
+                }
+            `}</style>
+
+            <FullCalendar
+                plugins={
+                    [dayGridPlugin, timeGridPlugin, interactionPlugin] as any
+                }
+                initialView="dayGridMonth"
+                headerToolbar={{
+                    left: "prev,next today",
+                    center: "title",
+                    right: "dayGridMonth,timeGridWeek",
+                }}
+                events={events}
+                editable={true}
+                eventDrop={handleEventDrop}
+                eventContent={renderEventContent}
+                dateClick={(info: any) => {
+                    if (onSelectDateSlot) {
+                        onSelectDateSlot(new Date(info.dateStr));
+                    }
+                }}
+                dayMaxEvents={3}
+                height="650px"
+            />
+
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#EAE5DC] pt-4 text-xs">
+                <div className="flex flex-wrap items-center gap-4 font-medium text-[#817B70]">
+                    <span className="flex items-center gap-1.5">
+                        <span className="size-2 rounded-full bg-amber-400 ring-2 ring-amber-100" />
+                        Scheduled
+                    </span>
+
+                    <span className="flex items-center gap-1.5">
+                        <span className="size-2 rounded-full bg-emerald-500 ring-2 ring-emerald-100" />
+                        Published
+                    </span>
+
+                    <span className="flex items-center gap-1.5">
+                        <span className="size-2 rounded-full bg-rose-500 ring-2 ring-rose-100" />
+                        Failed
+                    </span>
+                </div>
+
+                <div className="flex items-center gap-1.5 text-[#817B70]">
+                    <Sparkles className="size-3.5 text-[#B97960]" />
+                    <span>
+                        Tip: Click empty dates to prefill, drag items to reschedule
+                    </span>
+                </div>
             </div>
-          </div>
-        ) : (
-          <div
-            className={`size-6 rounded-lg shrink-0 flex items-center justify-center font-bold text-[9px] shadow-2xs tracking-tight ${theme.badge}`}
-          >
-            {theme.label}
-          </div>
-        )}
-
-        {/* Content details */}
-        <div className="flex-1 min-w-0 pr-1">
-          <p className="text-[11px] font-semibold text-slate-800 truncate leading-tight">
-            {eventInfo.event.title}
-          </p>
-          <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-0.5">
-            <Clock className="size-2.5 text-slate-400" />
-            <span>{timeString}</span>
-          </div>
         </div>
-
-        {/* Status indicator dot */}
-        <span
-          className={`size-2 rounded-full shrink-0 ${
-            status === "published"
-              ? "bg-emerald-500 ring-2 ring-emerald-100"
-              : status === "failed"
-              ? "bg-rose-500 ring-2 ring-rose-100"
-              : "bg-amber-400 ring-2 ring-amber-100"
-          }`}
-          title={`Status: ${status}`}
-        />
-      </div>
     );
-  };
-
-  return (
-    <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm relative">
-      {/* Loading Overlay */}
-      {rescheduling && (
-        <div className="absolute inset-0 bg-white/70 backdrop-blur-xs z-30 rounded-3xl flex flex-col items-center justify-center gap-3">
-          <div className="size-8 border-3 border-red-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs font-semibold text-slate-700 tracking-wide">
-            Syncing schedule...
-          </p>
-        </div>
-      )}
-
-      {/* Scoped FullCalendar styling */}
-      {/* Scoped FullCalendar styling */}
-      <style>{`
-        .fc {
-          --fc-border-color: #f1f5f9;
-          --fc-page-bg-color: transparent;
-          font-family: inherit;
-        }
-
-        /* 1. Make the days header sticky */
-        .fc .fc-col-header {
-          position: sticky;
-          top: 0;
-          z-index: 10;
-          background: #ffffff; /* Must have a solid background */
-          border-radius: 0.75rem 0.75rem 0 0;
-        }
-
-        /* 2. Style individual day header cells */
-        .fc-theme-standard th {
-          border: none;
-          padding: 0.75rem 0;
-          font-size: 0.75rem;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          color: #64748b;
-          background: #f8fafc;
-          border-bottom: 1px solid #e2e8f0;
-        }
-
-        .fc .fc-toolbar {
-          margin-bottom: 1.5rem;
-          flex-wrap: wrap;
-          gap: 0.75rem;
-        }
-        .fc .fc-toolbar-title {
-          font-size: 1.15rem;
-          font-weight: 700;
-          color: #0f172a;
-          letter-spacing: -0.02em;
-        }
-        .fc .fc-button {
-          background: #ffffff;
-          border: 1px solid #e2e8f0;
-          color: #475569;
-          font-size: 0.8125rem;
-          font-weight: 600;
-          padding: 0.45rem 0.85rem;
-          border-radius: 0.75rem;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-          transition: all 0.15s ease;
-          text-transform: capitalize;
-        }
-        .fc .fc-button:hover {
-          background: #f8fafc;
-          border-color: #cbd5e1;
-          color: #0f172a;
-        }
-        .fc .fc-button-primary:not(:disabled).fc-button-active,
-        .fc .fc-button-primary:not(:disabled):active {
-          background: #ef4444;
-          border-color: #ef4444;
-          color: #ffffff;
-          box-shadow: 0 1px 3px rgba(239, 68, 68, 0.25);
-        }
-        .fc-theme-standard td {
-          border-color: #f1f5f9;
-        }
-        .fc-daygrid-day-frame {
-          min-height: 110px !important;
-          padding: 4px;
-          transition: background 0.15s;
-        }
-        .fc-daygrid-day:hover .fc-daygrid-day-frame {
-          background: #fcfdfe;
-        }
-        .fc .fc-daygrid-day-top {
-          flex-direction: row;
-          padding: 4px 6px;
-        }
-        .fc .fc-daygrid-day-number {
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: #64748b;
-        }
-        .fc-day-today {
-          background-color: #fef2f2 !important;
-        }
-        .fc-day-today .fc-daygrid-day-number {
-          color: #ef4444 !important;
-          font-weight: 800;
-        }
-        .fc-daygrid-more-link {
-          font-size: 0.75rem;
-          font-weight: 600;
-          color: #ef4444 !important;
-          padding: 2px 6px;
-        }
-        .fc-event {
-          background: transparent !important;
-          border: none !important;
-          padding: 1px 0 !important;
-        }
-      `}</style>
-
-      {/* Calendar component */}
-      <FullCalendar
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin] as any}
-        initialView="dayGridMonth"
-        headerToolbar={{
-          left: "prev,next today",
-          center: "title",
-          right: "dayGridMonth,timeGridWeek",
-        }}
-        events={events}
-        editable={true}
-        eventDrop={handleEventDrop}
-        eventContent={renderEventContent}
-        dateClick={(info: any) => {
-          if (onSelectDateSlot) {
-            onSelectDateSlot(new Date(info.dateStr));
-          }
-        }}
-        dayMaxEvents={3}
-        height="650px"
-      />
-
-      {/* Interactive Legend & Quick Tips Footer */}
-      <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-4 text-slate-500 font-medium">
-          <span className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-amber-400 ring-2 ring-amber-100" />
-            Scheduled
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-emerald-500 ring-2 ring-emerald-100" />
-            Published
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-rose-500 ring-2 ring-rose-100" />
-            Failed
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1.5 text-slate-400">
-          <Sparkles className="size-3.5 text-amber-500" />
-          <span>Tip: Click empty dates to prefill, drag items to reschedule</span>
-        </div>
-      </div>
-    </div>
-  );
 };

@@ -5,7 +5,7 @@ import HowItWorks from "../components/Home/HowItWorks";
 import Testimonials from "../components/Home/Testimonials";
 import Pricing from "../components/Home/Pricing";
 import CTA from "../components/Home/CTA";
-import Footer from "../components/Home/Footer";
+import Footer  from "../components/Home/Footer";
 
 export default function Landing() {
     return (
