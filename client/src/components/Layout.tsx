@@ -2,7 +2,7 @@ import { useState } from "react";
 import Sidebar from "./SideBar";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { MenuIcon } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "@clerk/clerk-react";
 
 const pageTitles: Record<string, string> = {
     "/dashboard": "Dashboard",
@@ -13,7 +13,7 @@ const pageTitles: Record<string, string> = {
 
 const Layout = () => {
 
-    const {isAuthenticated, isLoading} = useAuth();
+    const { isSignedIn, isLoaded } = useAuth();
 
     const location = useLocation();
 
@@ -21,7 +21,7 @@ const Layout = () => {
 
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-    if(isLoading) {
+    if(!isLoaded) {
         return (
             <div className='flex-h-screen items-center justify-center bg-slate-50'>
                 <div className='size-8 border-4 border-red-500 border-t-transparent
@@ -30,7 +30,7 @@ const Layout = () => {
         )
     }
 
-    if(!isAuthenticated) {
+    if(!isSignedIn) {
         return <Navigate to="/login" replace/>
     }
 

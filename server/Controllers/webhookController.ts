@@ -1,7 +1,12 @@
 import { Request, Response } from 'express';
+import { Webhook } from 'svix';
+import { User } from '../Models/User.js';
 import AutoReplySettings from '../Models/AutoReplyModel.js';
 import zernio from '../config/zernio.js';
 
+// ==========================================
+// 1. ZERNIO WEBHOOK (Existing Auto-Reply Logic)
+// ==========================================
 export const handleZernioWebhook = async (req: Request, res: Response) => {
   res.status(200).send('Webhook received');
 
@@ -123,4 +128,67 @@ export const handleZernioWebhook = async (req: Request, res: Response) => {
   } catch (err: any) {
     console.error('Webhook execution error:', err?.message || err);
   }
+};
+
+// ==========================================
+// 2. CLERK WEBHOOK (New User Sync Logic)
+// ==========================================
+export const clerkWebhook = async (req: Request, res: Response) => {
+  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
+
+  if (!WEBHOOK_SECRET) {
+      res.status(500).json({ error: 'Missing CLERK_WEBHOOK_SECRET' });
+      return;
+  }
+
+  // Extract Svix headers for verification
+  const svix_id = req.headers["svix-id"] as string;
+  const svix_timestamp = req.headers["svix-timestamp"] as string;
+  const svix_signature = req.headers["svix-signature"] as string;
+
+  if (!svix_id || !svix_timestamp || !svix_signature) {
+      res.status(400).json({ error: 'Missing svix headers' });
+      return;
+  }
+
+  const payload = req.body;
+  // Note: For Clerk webhooks, ensure your route uses express.raw({ type: 'application/json' })
+  const body = typeof payload === 'string' ? payload : JSON.stringify(payload);
+  const wh = new Webhook(WEBHOOK_SECRET);
+  
+  let evt: any;
+  try {
+      evt = wh.verify(body, {
+          "svix-id": svix_id,
+          "svix-timestamp": svix_timestamp,
+          "svix-signature": svix_signature,
+      });
+  } catch (err) {
+      console.error('Webhook signature verification failed:', err);
+      res.status(400).json({ error: 'Verification failed' });
+      return;
+  }
+
+  const eventType = evt.type;
+
+  if (eventType === 'user.created') {
+      const { id, email_addresses, first_name, last_name } = evt.data;
+      const email = email_addresses[0]?.email_address;
+      const name = `${first_name || ''} ${last_name || ''}`.trim() || 'New User';
+
+      try {
+          await User.create({
+              clerkId: id,
+              name,
+              email
+          });
+          console.log(`Clerk User ${id} synced to MongoDB`);
+      } catch (error) {
+          console.error("Database sync error:", error);
+          res.status(500).json({ error: 'Failed to sync user to database' });
+          return;
+      }
+  }
+
+  res.status(200).json({ success: true });
 };

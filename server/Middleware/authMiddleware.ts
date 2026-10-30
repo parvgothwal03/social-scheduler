@@ -1,28 +1,31 @@
 import { NextFunction, Request, Response } from "express";
-import jwt from "jsonwebtoken";
+import { getAuth } from "@clerk/express";
 import { User } from "../Models/User.js";
 
-export interface AuthRequest extends Request{
-    user?:any
+export interface AuthRequest extends Request {
+    user?: any;
 }
 
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
-    let token;
-    if(req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
-        try {
-            token = req.headers.authorization.split(" ")[1];
-            const decoded: any = jwt.verify(token, process.env.JWT_SECRET!)
-            req.user = await User.findById(decoded.id).select("-password");
-            if(!req.user) {
-                res.status(401).json({message: "Not authorized, user not found"});
-                return;
-            }
-            next();
-        } catch (error: any) {
-            res.status(401).json({message: error?.message || "Not authorized, token failed"});
-        }
-    } else {
-        res.status(401).json({message: "Not authorized, no token"});
-    }
-}
+    try {
+        // Extract the authenticated state provided by Clerk
+        const { userId } = getAuth(req);
 
+        if (!userId) {
+            res.status(401).json({ message: "Not authorized, no token" });
+            return;
+        }
+
+        // Look up the user in MongoDB using the Clerk ID instead of the MongoDB _id
+        req.user = await User.findOne({ clerkId: userId });
+
+        if (!req.user) {
+            res.status(401).json({ message: "Not authorized, user not found in database" });
+            return;
+        }
+
+        next();
+    } catch (error: any) {
+        res.status(401).json({ message: error?.message || "Not authorized, token failed" });
+    }
+};

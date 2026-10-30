@@ -13,6 +13,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@clerk/express": "^2.1.85",
     "@google/genai": "^2.12.0",
     "@ngrok/ngrok": "^1.7.0",
     "@zernio/node": "^0.2.369",
@@ -25,7 +26,8 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.7.4",
     "multer": "^2.2.0",
-    "node-cron": "^4.6.0"
+    "node-cron": "^4.6.0",
+    "svix": "^2.9.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

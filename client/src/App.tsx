@@ -1,4 +1,5 @@
 import { Route, Routes } from "react-router-dom";
+import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Layout from "./components/Layout";
@@ -17,7 +18,20 @@ export default function App() {
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
-                <Route element={<Layout/>}>
+                
+                {/* Protected Routes */}
+                <Route 
+                    element={
+                        <>
+                            <SignedIn>
+                                <Layout/>
+                            </SignedIn>
+                            <SignedOut>
+                                <RedirectToSignIn />
+                            </SignedOut>
+                        </>
+                    }
+                >
                     <Route path="/dashboard" element={<Dashboard/>}/>
                     <Route path="/accounts" element={<Accounts/>}/>
                     <Route path="/schedule" element={<Scheduler/>}/>

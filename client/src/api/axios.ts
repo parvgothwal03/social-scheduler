@@ -7,4 +7,29 @@ const api = axios.create({
   },
 });
 
+// Add a request interceptor to attach the Clerk token
+api.interceptors.request.use(
+  async (config) => {
+    // Clerk attaches itself to the global window object in the browser
+    const clerk = (window as Window & {
+      Clerk?: {
+        session?: {
+          getToken: () => Promise<string | null>;
+        };
+      };
+    }).Clerk;
+
+    if (clerk?.session) {
+      const token = await clerk.session.getToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 export default api;
