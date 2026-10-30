@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import AutoReplySettings from "../Models/AutoReplyModel.js";
 
 const connectDB = async () => {
     try {
@@ -6,6 +7,8 @@ const connectDB = async () => {
             console.log("MongoDB connected");
         });
         await mongoose.connect(process.env.MONGODB_URI!);
+        await AutoReplySettings.syncIndexes();
+        console.log("Auto-reply indexes synchronized");
     } catch (error) {
         console.error("Error connecting to MongoDB:", error);
         process.exit(1);

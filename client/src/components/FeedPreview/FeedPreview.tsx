@@ -1,3 +1,4 @@
+
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react-hooks/set-state-in-effect */
 import React, { useState, useEffect } from "react";
@@ -8,138 +9,175 @@ import { FacebookMockup } from "./FacebookMockup";
 import { Eye, AlertCircle } from "lucide-react";
 
 interface FeedPreviewProps {
-  content: string;
-  mediaFile?: File | null;
-  mediaUrl?: string | null;
-  selectedPlatforms: string[];
+    content: string;
+    mediaFile?: File | null;
+    mediaUrl?: string | null;
+    selectedPlatforms: string[];
 }
 
 const PLATFORM_LIMITS: Record<string, number> = {
-  twitter: 280,
-  instagram: 2200,
-  linkedin: 3000,
-  facebook: 63206,
+    twitter: 280,
+    instagram: 2200,
+    linkedin: 3000,
+    facebook: 63206,
 };
 
 export const FeedPreview: React.FC<FeedPreviewProps> = ({
-  content,
-  mediaFile,
-  mediaUrl,
-  selectedPlatforms,
+    content,
+    mediaFile,
+    mediaUrl,
+    selectedPlatforms,
 }) => {
-  const activeMediaUrl = mediaFile ? URL.createObjectURL(mediaFile) : mediaUrl;
-  const isVideo = mediaFile?.type.startsWith("video/") || false;
+    const activeMediaUrl = mediaFile
+        ? URL.createObjectURL(mediaFile)
+        : mediaUrl;
 
-  // Track active tab independently so clicking any platform always works
-  const [activeTab, setActiveTab] = useState<string>(() => {
-    return selectedPlatforms.length > 0 ? selectedPlatforms[0] : "instagram";
-  });
+    const isVideo = mediaFile?.type.startsWith("video/") || false;
 
-  // Keep tab updated when user selects platforms in the compose form
-  useEffect(() => {
-    if (selectedPlatforms.length > 0 && !selectedPlatforms.includes(activeTab)) {
-      setActiveTab(selectedPlatforms[0]);
-    }
-  }, [selectedPlatforms]);
+    // Track the active preview tab independently.
+    const [activeTab, setActiveTab] = useState<string>(() => {
+        return selectedPlatforms.length > 0
+            ? selectedPlatforms[0]
+            : "instagram";
+    });
 
-  const limit = PLATFORM_LIMITS[activeTab] || 280;
-  const charsLeft = limit - content.length;
-  const isOverLimit = charsLeft < 0;
+    // Keep the active tab synchronized with selected platforms.
+    useEffect(() => {
+        if (
+            selectedPlatforms.length > 0 &&
+            !selectedPlatforms.includes(activeTab)
+        ) {
+            setActiveTab(selectedPlatforms[0]);
+        }
+    }, [selectedPlatforms]);
 
-  return (
-    <div className="bg-slate-50/70 border border-slate-200 rounded-3xl p-5 shadow-xs flex flex-col items-center">
-      {/* Header bar */}
-      <div className="w-full flex items-center justify-between pb-4 border-b border-slate-200/80 mb-4">
-        <div className="flex items-center gap-2">
-          <Eye className="size-4 text-slate-500" />
-          <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-            Live Feed Preview
-          </h4>
-        </div>
+    const limit = PLATFORM_LIMITS[activeTab] || 280;
+    const charsLeft = limit - content.length;
+    const isOverLimit = charsLeft < 0;
 
-        {/* Platform switch tabs */}
-        <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 text-xs">
-          {["instagram", "linkedin", "twitter", "facebook"].map((plat) => {
-            const isSelectedInForm = selectedPlatforms.includes(plat);
-            return (
-              <button
-                key={plat}
-                type="button"
-                onClick={() => setActiveTab(plat)}
-                className={`relative px-2.5 py-1 rounded-lg font-semibold capitalize transition cursor-pointer ${
-                  activeTab === plat
-                    ? "bg-slate-900 text-white shadow-2xs"
-                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
-                }`}
-              >
-                {plat === "facebook" ? "FB" : plat === "linkedin" ? "LinkedIn" : plat}
-                {isSelectedInForm && (
-                  <span
-                    className={`ml-1 inline-block size-1.5 rounded-full ${
-                      activeTab === plat ? "bg-emerald-400" : "bg-emerald-500"
-                    }`}
-                    title="Selected in compose form"
-                  />
+    const platforms = [
+        { id: "instagram", label: "Instagram" },
+        { id: "linkedin", label: "LinkedIn" },
+        { id: "twitter", label: "Twitter" },
+        { id: "facebook", label: "Facebook" },
+    ];
+
+    return (
+        <div className="flex w-full flex-col items-center rounded-3xl border border-[#DED7CA] bg-[#F8F7F3] p-4 shadow-sm sm:p-5">
+            {/* Header */}
+            <div className="mb-5 flex w-full flex-col gap-4 border-b border-[#DED7CA] pb-4">
+                <div className="flex items-center gap-2">
+                    <div className="flex size-8 items-center justify-center rounded-lg border border-[#DED7CA] bg-white">
+                        <Eye className="size-4 text-[#B97960]" />
+                    </div>
+
+                    <div>
+                        <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-[#292720]">
+                            Live Feed Preview
+                        </h4>
+
+                        <p className="mt-0.5 text-[10px] text-[#817B70]">
+                            See how your post looks on each platform
+                        </p>
+                    </div>
+                </div>
+
+                {/* Platform Tabs */}
+                <div className="flex w-full flex-wrap items-center gap-1 rounded-xl border border-[#DED7CA] bg-white p-1">
+                    {platforms.map((platform) => {
+                        const isSelectedInForm =
+                            selectedPlatforms.includes(platform.id);
+
+                        const isActive = activeTab === platform.id;
+
+                        return (
+                            <button
+                                key={platform.id}
+                                type="button"
+                                onClick={() => setActiveTab(platform.id)}
+                                aria-pressed={isActive}
+                                className={`relative flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[11px] font-medium transition-all duration-200 sm:text-xs ${
+                                    isActive
+                                        ? "bg-[#292720] text-white shadow-sm"
+                                        : "text-[#817B70] hover:bg-[#F8F7F3] hover:text-[#292720]"
+                                }`}
+                            >
+                                <span>{platform.label}</span>
+
+                                {isSelectedInForm && (
+                                    <span
+                                        className={`size-1.5 shrink-0 rounded-full ${
+                                            isActive
+                                                ? "bg-emerald-400"
+                                                : "bg-emerald-500"
+                                        }`}
+                                        title="Selected in compose form"
+                                    />
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Preview Viewport */}
+            <div className="my-2 flex w-full justify-center overflow-hidden">
+                {activeTab === "instagram" && (
+                    <InstagramMockup
+                        content={content}
+                        mediaUrl={activeMediaUrl}
+                        mediaType={isVideo ? "video" : "image"}
+                    />
                 )}
-              </button>
-            );
-          })}
+
+                {activeTab === "linkedin" && (
+                    <LinkedInMockup
+                        content={content}
+                        mediaUrl={activeMediaUrl}
+                        mediaType={isVideo ? "video" : "image"}
+                    />
+                )}
+
+                {activeTab === "twitter" && (
+                    <TwitterMockup
+                        content={content}
+                        mediaUrl={activeMediaUrl}
+                        mediaType={isVideo ? "video" : "image"}
+                    />
+                )}
+
+                {activeTab === "facebook" && (
+                    <FacebookMockup
+                        content={content}
+                        mediaUrl={activeMediaUrl}
+                        mediaType={isVideo ? "video" : "image"}
+                    />
+                )}
+            </div>
+
+            {/* Character Count and Validation */}
+            <div className="mt-5 flex w-full flex-wrap items-center justify-between gap-3 border-t border-[#DED7CA] pt-4 text-xs">
+                <div className="flex items-center gap-1.5">
+                    {isOverLimit ? (
+                        <span className="flex items-center gap-1.5 font-medium text-rose-600">
+                            <AlertCircle className="size-3.5 shrink-0" />
+                            Exceeds {activeTab} limit by{" "}
+                            {Math.abs(charsLeft).toLocaleString()} chars
+                        </span>
+                    ) : (
+                        <span className="font-medium text-[#817B70]">
+                            {charsLeft.toLocaleString()} characters remaining
+                        </span>
+                    )}
+                </div>
+
+                {activeTab === "instagram" && !activeMediaUrl && (
+                    <span className="flex items-center gap-1 text-[11px] font-medium text-amber-700">
+                        <AlertCircle className="size-3.5" />
+                        Image or video required
+                    </span>
+                )}
+            </div>
         </div>
-      </div>
-
-      {/* Target Render Viewport */}
-      <div className="w-full flex justify-center my-2">
-        {activeTab === "instagram" && (
-          <InstagramMockup
-            content={content}
-            mediaUrl={activeMediaUrl}
-            mediaType={isVideo ? "video" : "image"}
-          />
-        )}
-        {activeTab === "linkedin" && (
-          <LinkedInMockup
-            content={content}
-            mediaUrl={activeMediaUrl}
-            mediaType={isVideo ? "video" : "image"}
-          />
-        )}
-        {activeTab === "twitter" && (
-          <TwitterMockup
-            content={content}
-            mediaUrl={activeMediaUrl}
-            mediaType={isVideo ? "video" : "image"}
-          />
-        )}
-        {activeTab === "facebook" && (
-          <FacebookMockup
-            content={content}
-            mediaUrl={activeMediaUrl}
-            mediaType={isVideo ? "video" : "image"}
-          />
-        )}
-      </div>
-
-      {/* Validation Banner */}
-      <div className="w-full mt-4 pt-3 border-t border-slate-200/80 flex items-center justify-between text-xs">
-        <div className="flex items-center gap-1.5">
-          {isOverLimit ? (
-            <span className="flex items-center gap-1 text-rose-600 font-medium">
-              <AlertCircle className="size-3.5" />
-              Exceeds {activeTab} limit by {Math.abs(charsLeft)} chars
-            </span>
-          ) : (
-            <span className="text-slate-500 font-medium">
-              {charsLeft.toLocaleString()} characters remaining
-            </span>
-          )}
-        </div>
-
-        {activeTab === "instagram" && !activeMediaUrl && (
-          <span className="text-amber-600 text-[11px] font-medium">
-            ⚠️ Image or video required
-          </span>
-        )}
-      </div>
-    </div>
-  );
+    );
 };

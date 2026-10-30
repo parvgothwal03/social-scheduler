@@ -65,6 +65,16 @@ export const updateSettings = async (req: AuthRequest, res: Response) => {
     const userId = req.user._id;
     const { accountId, isEnabled, mode, aiPrompt, enableDmFollowUp, rules } = req.body;
 
+    if (
+      typeof accountId !== 'string' ||
+      !accountId.trim() ||
+      !['keyword', 'ai'].includes(mode) ||
+      !Array.isArray(rules)
+    ) {
+      res.status(400).json({ message: 'Invalid auto-reply settings.' });
+      return;
+    }
+
     const account = await Account.findOne({
       user: userId,
       zernioAccountId: accountId,
@@ -79,7 +89,16 @@ export const updateSettings = async (req: AuthRequest, res: Response) => {
     // Find and update the user's settings, or create them if they don't exist yet
     const updatedSettings = await AutoReplySettings.findOneAndUpdate(
       { userId, accountId },
-      { isEnabled, mode, aiPrompt, enableDmFollowUp, rules },
+      {
+        $set: {
+          isEnabled: Boolean(isEnabled),
+          mode,
+          aiPrompt: typeof aiPrompt === 'string' ? aiPrompt : undefined,
+          enableDmFollowUp: Boolean(enableDmFollowUp),
+          rules
+        },
+        $setOnInsert: { userId, accountId: accountId.trim() }
+      },
       { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
     );
 

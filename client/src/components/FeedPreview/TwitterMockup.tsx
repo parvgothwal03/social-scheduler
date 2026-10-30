@@ -1,80 +1,145 @@
+
 import React from "react";
-import { Heart, MessageCircle, Repeat2, Bookmark, Share, MoreHorizontal } from "lucide-react";
+import {
+    Heart,
+    MessageCircle,
+    Repeat2,
+    Bookmark,
+    Share,
+    MoreHorizontal,
+} from "lucide-react";
 
 interface TwitterMockupProps {
-  content: string;
-  mediaUrl?: string | null;
-  mediaType?: "image" | "video";
-  authorName?: string;
-  handle?: string;
-  avatarUrl?: string;
+    content: string;
+    mediaUrl?: string | null;
+    mediaType?: "image" | "video";
+    authorName?: string;
+    handle?: string;
+    avatarUrl?: string;
 }
 
 export const TwitterMockup: React.FC<TwitterMockupProps> = ({
-  content,
-  mediaUrl,
-  mediaType = "image",
-  authorName = "Your Name",
-  handle = "yourhandle",
-  avatarUrl,
+    content,
+    mediaUrl,
+    mediaType = "image",
+    authorName = "Your Name",
+    handle = "yourhandle",
+    avatarUrl,
 }) => {
-  return (
-    <div className="w-full max-w-[400px] bg-white border border-slate-200 rounded-2xl p-4 shadow-xs text-xs">
-      <div className="flex gap-3">
-        <img
-          src={avatarUrl || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"}
-          alt="Avatar"
-          className="size-9 rounded-full object-cover shrink-0"
-        />
+    return (
+        <div className="w-full max-w-[400px] rounded-2xl border border-[#DED7CA] bg-white p-4 text-xs shadow-sm">
+            <div className="flex gap-3">
+                {/* Avatar */}
+                <img
+                    src={
+                        avatarUrl ||
+                        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100"
+                    }
+                    alt="Avatar"
+                    className="size-10 shrink-0 rounded-full border border-[#DED7CA] object-cover"
+                />
 
-        <div className="flex-1 min-w-0">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-1.5 truncate">
-              <span className="font-bold text-slate-900 truncate">{authorName}</span>
-              <span className="text-slate-500 font-normal">@{handle}</span>
-              <span className="text-slate-400">·</span>
-              <span className="text-slate-400">1m</span>
+                <div className="min-w-0 flex-1">
+                    {/* Header */}
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                        <div className="flex min-w-0 items-center gap-1.5">
+                            <span className="truncate text-sm font-semibold text-[#292720]">
+                                {authorName}
+                            </span>
+
+                            <span className="truncate text-xs text-[#817B70]">
+                                @{handle}
+                            </span>
+
+                            <span className="shrink-0 text-[#A49C8F]">
+                                ·
+                            </span>
+
+                            <span className="shrink-0 text-xs text-[#A49C8F]">
+                                1m
+                            </span>
+                        </div>
+
+                        <button
+                            type="button"
+                            aria-label="More post options"
+                            className="shrink-0 rounded-full p-1.5 text-[#A49C8F] transition-colors hover:bg-[#F8F7F3] hover:text-[#292720]"
+                        >
+                            <MoreHorizontal className="size-4" />
+                        </button>
+                    </div>
+
+                    {/* Tweet Text */}
+                    <p className="mb-3 whitespace-pre-line break-words text-[13px] leading-relaxed text-[#292720]">
+                        {content || "What's happening?"}
+                    </p>
+
+                    {/* Media Attachment */}
+                    {mediaUrl && (
+                        <div className="mb-3 flex max-h-60 items-center justify-center overflow-hidden rounded-xl border border-[#DED7CA] bg-[#292720]">
+                            {mediaType === "video" ? (
+                                <video
+                                    src={mediaUrl}
+                                    className="max-h-60 w-full object-cover"
+                                    controls
+                                />
+                            ) : (
+                                <img
+                                    src={mediaUrl}
+                                    alt="Tweet attachment"
+                                    className="max-h-60 w-full object-cover"
+                                />
+                            )}
+                        </div>
+                    )}
+
+                    {/* Engagement Actions */}
+                    <div className="flex max-w-[300px] items-center justify-between pt-1 text-[11px] text-[#A49C8F]">
+                        <button
+                            type="button"
+                            aria-label="12 replies"
+                            className="flex items-center gap-1.5 transition-colors hover:text-[#B97960]"
+                        >
+                            <MessageCircle className="size-3.5" />
+                            <span>12</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            aria-label="5 reposts"
+                            className="flex items-center gap-1.5 transition-colors hover:text-emerald-600"
+                        >
+                            <Repeat2 className="size-3.5" />
+                            <span>5</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            aria-label="84 likes"
+                            className="flex items-center gap-1.5 transition-colors hover:text-rose-500"
+                        >
+                            <Heart className="size-3.5" />
+                            <span>84</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            aria-label="Bookmark post"
+                            className="transition-colors hover:text-[#B97960]"
+                        >
+                            <Bookmark className="size-3.5" />
+                        </button>
+
+                        <button
+                            type="button"
+                            aria-label="Share post"
+                            className="transition-colors hover:text-[#B97960]"
+                        >
+                            <Share className="size-3.5" />
+                        </button>
+                    </div>
+                </div>
             </div>
-            <MoreHorizontal className="size-4 text-slate-400 shrink-0 cursor-pointer" />
-          </div>
-
-          {/* Tweet Text */}
-          <p className="text-slate-900 text-[13px] leading-snug whitespace-pre-line break-words mb-3">
-            {content || "What's happening?"}
-          </p>
-
-          {/* Media Attachment */}
-          {mediaUrl && (
-            <div className="rounded-xl overflow-hidden border border-slate-100 max-h-60 mb-3 bg-slate-950 flex items-center justify-center">
-              {mediaType === "video" ? (
-                <video src={mediaUrl} className="w-full max-h-60 object-cover" controls />
-              ) : (
-                <img src={mediaUrl} alt="Tweet attachment" className="w-full max-h-60 object-cover" />
-              )}
-            </div>
-          )}
-
-          {/* Action Row */}
-          <div className="flex items-center justify-between text-slate-500 text-[11px] max-w-[280px]">
-            <span className="flex items-center gap-1.5 hover:text-sky-500 cursor-pointer transition">
-              <MessageCircle className="size-3.5" /> 12
-            </span>
-            <span className="flex items-center gap-1.5 hover:text-emerald-500 cursor-pointer transition">
-              <Repeat2 className="size-3.5" /> 5
-            </span>
-            <span className="flex items-center gap-1.5 hover:text-rose-500 cursor-pointer transition">
-              <Heart className="size-3.5" /> 84
-            </span>
-            <span className="flex items-center gap-1.5 hover:text-sky-500 cursor-pointer transition">
-              <Bookmark className="size-3.5" />
-            </span>
-            <span className="flex items-center gap-1.5 hover:text-sky-500 cursor-pointer transition">
-              <Share className="size-3.5" />
-            </span>
-          </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
