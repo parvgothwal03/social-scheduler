@@ -1,4 +1,20 @@
-# React + TypeScript + Vite
+# Social Scheduler client
+
+## Environment variables
+
+Copy `.env.example` to `.env` for local development and set the Clerk
+publishable key from the Clerk Dashboard. Do not commit `.env`.
+
+For a Vercel deployment, set `VITE_CLERK_PUBLISHABLE_KEY` and
+`VITE_API_BASE_URL` in the project settings before redeploying. The Vercel
+project root should be `client`.
+
+## Development
+
+```bash
+npm install
+npm run dev
+```
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
