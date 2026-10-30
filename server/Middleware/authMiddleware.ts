@@ -8,7 +8,6 @@ export interface AuthRequest extends Request {
 
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
-        // Extract the authenticated state provided by Clerk
         const { userId } = getAuth(req);
 
         if (!userId) {
@@ -16,14 +15,20 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
             return;
         }
 
-        // Look up the user in MongoDB using the Clerk ID instead of the MongoDB _id
-        req.user = await User.findOne({ clerkId: userId });
+        // 1. Look up the user in MongoDB using the Clerk ID
+        let user = await User.findOne({ clerkId: userId });
 
-        if (!req.user) {
-            res.status(401).json({ message: "Not authorized, user not found in database" });
-            return;
+        // 2. AUTO-SYNC FALLBACK: If the webhook hasn't run yet, create the user right now!
+        if (!user) {
+            user = await User.create({
+                clerkId: userId,
+                name: "Clerk User",
+                email: `${userId}@clerk.placeholder`
+            });
+            console.log(`Auto-provisioned missing user for Clerk ID: ${userId}`);
         }
 
+        req.user = user;
         next();
     } catch (error: any) {
         res.status(401).json({ message: error?.message || "Not authorized, token failed" });
