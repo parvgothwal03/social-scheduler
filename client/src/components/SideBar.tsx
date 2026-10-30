@@ -1,11 +1,10 @@
-import { BarChart3Icon, CalendarDaysIcon, LayoutDashboardIcon, LogOutIcon, MessageSquareReplyIcon, UserIcon, Wand2Icon } from "lucide-react";
+import { BarChart3Icon, CalendarDaysIcon, LayoutDashboardIcon, MessageSquareReplyIcon, UserIcon, Wand2Icon } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { useUser, UserButton } from "@clerk/clerk-react";
 
 const Sidebar = ({isOpen, setIsOpen} : {isOpen: boolean, setIsOpen: (val: boolean) => void}) => {
  
-    const {logout, user} = useAuth();
-
+    const { user } = useUser();
     const location = useLocation();
 
     const navItems = [
@@ -17,9 +16,8 @@ const Sidebar = ({isOpen, setIsOpen} : {isOpen: boolean, setIsOpen: (val: boolea
         { name: "Analytics", icon: BarChart3Icon, path: "/analytics" }
     ]
 
-
     return (
-        <div aria-hidden={!isOpen} className={`fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200
+        <div  className={`fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200
         flex flex-col h-full transform transition-transform duration-200 ease-in-out
         md:relative md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} z-50 md:z-auto`}>
 
@@ -30,10 +28,12 @@ const Sidebar = ({isOpen, setIsOpen} : {isOpen: boolean, setIsOpen: (val: boolea
                     Scheduler
                 </div>
             </div>
+            
             {/* Navigation */}
             <div className='px-6 py-2'>
                 <span className='text-sm text-slate-500 uppercase tracking-wider'>Menu</span>
             </div>
+            
             {/* Nav Items */}
             <nav className='flex-1 px-3 space-y-1'>
                 {navItems.map((item) => {
@@ -55,26 +55,19 @@ const Sidebar = ({isOpen, setIsOpen} : {isOpen: boolean, setIsOpen: (val: boolea
             
             {/* User Footer */}
             <div className='p-4 border-t border-slate-100'>
-                <div className='flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50
-                transition-colors'>
-                    <div className='size-8 rounded-full bg-linear-to-br from-red-400 to-pink-400
-                    flex items-center justify-center text-white text-sm font-medium shrink-0'>
-                        {user?.name?.charAt(0).toUpperCase() || "U"}
+                <div className='flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 transition-colors'>
+                    <div className="shrink-0 flex items-center justify-center">
+                        {/* Clerk UserButton handles avatar, account management, and sign out */}
+                        <UserButton afterSignOutUrl="/" />
                     </div>
                     <div className='flex-1 min-w-0'>
-                        <div className='text-sm text-slate-800 truncate'>{user?.name}</div>
-                        <div className='text-xs text-slate-400 truncate'>{user?.email}</div>
+                        <div className='text-sm text-slate-800 truncate'>{user?.fullName}</div>
+                        <div className='text-xs text-slate-400 truncate'>{user?.primaryEmailAddress?.emailAddress}</div>
                     </div>
                 </div>
-
-                <button onClick={logout} className='mt-1 flex items-center gap-2 px-3 py-2 w-full
-                rounded text-sm text-slate-500 hover:bg-red-50 hover:text-red-500 transition-all
-                duration-150'>
-                    <LogOutIcon className='size-4'/>
-                    Sign Out
-                </button>
             </div>
         </div>
     )
 }
+
 export default Sidebar;

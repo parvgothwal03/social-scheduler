@@ -1,8 +1,12 @@
 import express from 'express';
-import { handleZernioWebhook } from '../Controllers/webhookController.js';
+import { handleZernioWebhook, clerkWebhook } from '../Controllers/webhookController.js';
 
 const router = express.Router();
 
-router.post('/zernio', handleZernioWebhook);
+// Clerk MUST have the raw body for Svix signature verification
+router.post('/clerk', express.raw({ type: 'application/json' }), clerkWebhook);
+
+// Zernio requires standard JSON parsing
+router.post('/zernio', express.json(), handleZernioWebhook);
 
 export default router;

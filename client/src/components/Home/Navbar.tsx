@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 import { ArrowRightIcon } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "@clerk/clerk-react";
 
 export default function Navbar() {
-    const { user } = useAuth();
+    const { isSignedIn } = useAuth();
 
     return (
         <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-100">
@@ -24,7 +24,7 @@ export default function Navbar() {
                     </a>
                 </div>
 
-                {user ? (
+                {isSignedIn ? (
                     <Link to="/dashboard" className="flex items-center gap-1.5 text-sm font-medium bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full shadow-sm hover:shadow-red-200 hover:shadow-md">
                         Go to Dashboard <ArrowRightIcon className="size-3.5" />
                     </Link>
